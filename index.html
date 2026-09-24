@@ -1,1 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
+    <meta
+        name="description"
+        content="FileGuard — local-first file analysis laboratory."
+    >
+
+    <title>FileGuard</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div id="app">
+
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-name">FILEGUARD</span>
+                <span class="brand-version">01.0.0</span>
+            </div>
+
+            <div class="engine-status">
+                <span class="status-indicator"></span>
+                <span>LOCAL ENGINE — READY</span>
+            </div>
+        </header>
+
+
+        <main class="main">
+
+            <section class="hero">
+
+                <div class="hero-label">
+                    ANALYSIS
+                </div>
+
+                <h1>
+                    Automated file
+                    <br>
+                    analysis laboratory.
+                </h1>
+
+                <p class="hero-description">
+                    Identify structure, integrity, metadata
+                    and security-relevant characteristics
+                    of a file from a single analysis.
+                </p>
+
+            </section>
+
+
+            <section class="upload-section">
+
+                <div
+                    id="drop-zone"
+                    class="drop-zone"
+                >
+
+                    <input
+                        id="file-input"
+                        type="file"
+                        hidden
+                    >
+
+                    <div class="drop-content">
+
+                        <div class="drop-index">
+                            01
+                        </div>
+
+                        <div class="drop-title">
+                            SELECT FILE
+                        </div>
+
+                        <div class="drop-description">
+                            Choose a file to start analysis automatically.
+                        </div>
+
+                        <button
+                            id="select-file-button"
+                            class="primary-button"
+                            type="button"
+                        >
+                            SELECT FILE
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section
+                id="analysis-section"
+                class="analysis-section hidden"
+            >
+
+                <div class="section-header">
+                    <span>ANALYSIS</span>
+                    <span id="analysis-status">PREPARING</span>
+                </div>
+
+                <div
+                    id="analysis-steps"
+                    class="analysis-steps"
+                ></div>
+
+            </section>
+
+
+            <section
+                id="result-section"
+                class="result-section hidden"
+            >
+
+                <div class="section-header">
+                    <span>RESULT</span>
+                    <span id="result-status">COMPLETE</span>
+                </div>
+
+                <div id="result-content"></div>
+
+            </section>
+
+        </main>
+
+
+        <footer class="footer">
+
+            <div>
+                FILEGUARD
+            </div>
+
+            <div>
+                LOCAL-FIRST ANALYSIS
+            </div>
+
+            <div>
+                V1.0
+            </div>
+
+        </footer>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
