@@ -1,1031 +1,557 @@
 "use strict";
 
-/*
- * FILEGUARD
- * Archive Analyzer
- *
- * V1.0
- *
- * Purpose:
- * - inspect ZIP-based containers locally
- * - parse the ZIP central directory
- * - enumerate files
- * - detect encrypted entries
- * - detect ZIP64
- * - detect path traversal / absolute paths
- * - detect duplicate entry names
- * - detect suspicious compression ratios
- * - identify known container types:
- *   - APK
- *   - JAR
- *   - DOCX
- *   - XLSX
- *   - PPTX
- *   - ZIP
- *
- * No external libraries required.
- */
-
-
 const FileGuardArchiveAnalyzer = {
+    VERSION:"2.0.0",
+    MAX_ENTRIES:100000,
+    SUSPICIOUS_UNCOMPRESSED_SIZE:100*1024*1024,
+    SUSPICIOUS_COMPRESSION_RATIO:100,
+    ZIP_LOCAL_FILE_HEADER:0x04034B50,
+    ZIP_CENTRAL_DIRECTORY_HEADER:0x02014B50,
+    ZIP_END_OF_CENTRAL_DIRECTORY:0x06054B50,
+    ZIP64_END_OF_CENTRAL_DIRECTORY:0x06064B50,
+    ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR:0x07064B50,
 
-    VERSION: "1.0.0",
-
-    MAX_ENTRIES: 100000,
-
-    ZIP_LOCAL_FILE_HEADER: 0x04034B50,
-
-    ZIP_CENTRAL_DIRECTORY_HEADER: 0x02014B50,
-
-    ZIP_END_OF_CENTRAL_DIRECTORY: 0x06054B50,
-
-    ZIP64_END_OF_CENTRAL_DIRECTORY: 0x06064B50,
-
-    ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR: 0x07064B50,
-
-
-    async analyze(file) {
-
+    async analyze(file){
         this.validateFile(file);
-
-
-        const startedAt =
-            performance.now();
-
-
-        const basicResult = {
-
-            analyzer:
-                "archive",
-
-            analyzerVersion:
-                this.VERSION,
-
-            status:
-                "unknown",
-
-            format:
-                "ZIP",
-
-            containerType:
-                "ZIP",
-
-            entryCount:
-                0,
-
-            entries:
-                [],
-
-            statistics: {
-
-                compressedBytes:
-                    0,
-
-                uncompressedBytes:
-                    0,
-
-                compressionRatio:
-                    null,
-
-                encryptedEntries:
-                    0,
-
-                directories:
-                    0,
-
-                files:
-                    0
-
+        const startedAt=performance.now();
+        const result={
+            analyzer:"archive",
+            analyzerVersion:this.VERSION,
+            status:"unknown",
+            format:"ZIP",
+            containerType:"ZIP",
+            entryCount:0,
+            entries:[],
+            statistics:{
+                compressedBytes:0,
+                uncompressedBytes:0,
+                compressionRatio:null,
+                encryptedEntries:0,
+                directories:0,
+                files:0
             },
-
-            features: {
-
-                zip64:
-                    false,
-
-                encrypted:
-                    false,
-
-                duplicateNames:
-                    false,
-
-                pathTraversal:
-                    false,
-
-                absolutePaths:
-                    false,
-
-                suspiciousCompression:
-                    false,
-
-                nestedArchives:
-                    false
-
+            features:{
+                zip64:false,
+                encrypted:false,
+                duplicateNames:false,
+                pathTraversal:false,
+                absolutePaths:false,
+                suspiciousCompression:false,
+                nestedArchives:false
             },
-
-            findings: [],
-
-            evidence: {
-
-                signatures: [],
-
-                containerMarkers: [],
-
-                centralDirectory:
-                    null
-
+            findings:[],
+            evidence:{
+                signatures:[],
+                containerMarkers:[],
+                centralDirectory:null
             }
-
         };
 
+        const buffer=await file.arrayBuffer();
+        const bytes=new Uint8Array(buffer);
+        const signature=bytes.length>=4?this.readUInt32LE(bytes,0):null;
 
-        /*
-         * Read the complete file.
-         *
-         * This is intentional for V1 because the
-         * archive analyzer needs random access to
-         * ZIP structures.
-         */
-
-        const buffer =
-            await file.arrayBuffer();
-
-
-        const bytes =
-            new Uint8Array(buffer);
-
-
-        /*
-         * Validate ZIP structure.
-         */
-
-        const endRecord =
-            this.findEndOfCentralDirectory(
-                bytes
+        if(signature!==null){
+            result.evidence.signatures.push(
+                "0x"+signature.toString(16).padStart(8,"0")
             );
-
-
-        if (!endRecord) {
-
-            return {
-
-                ...basicResult,
-
-                status:
-                    "invalid",
-
-                findings: [
-
-                    {
-
-                        id:
-                            "invalid-zip-structure",
-
-                        severity:
-                            "MEDIUM",
-
-                        confidence:
-                            "HIGH",
-
-                        title:
-                            "ZIP end-of-central-directory record was not found.",
-
-                        description:
-                            "The file has ZIP-like characteristics but its central directory could not be located.",
-
-                        evidence:
-                            null,
-
-                        recommendation:
-                            "Treat the container as structurally invalid until further inspection."
-
-                    }
-
-                ],
-
-                durationMs:
-                    Math.round(
-                        performance.now() -
-                        startedAt
-                    )
-
-            };
         }
 
+        const endRecord=this.findEndOfCentralDirectory(bytes);
 
-        basicResult.evidence.centralDirectory = {
+        if(!endRecord){
+            result.status="invalid";
+            result.findings.push({
+                id:"invalid-zip-structure",
+                severity:"MEDIUM",
+                confidence:"HIGH",
+                title:"ZIP end-of-central-directory record was not found.",
+                description:"The file has ZIP-like characteristics but its central directory could not be located.",
+                evidence:null,
+                recommendation:"Treat the container as structurally invalid until further inspection."
+            });
+            result.durationMs=Math.round(performance.now()-startedAt);
+            return result;
+        }
 
-            offset:
-                endRecord.offset,
-
-            entries:
-                endRecord.entries,
-
-            centralDirectoryOffset:
-                endRecord.centralDirectoryOffset,
-
-            centralDirectorySize:
-                endRecord.centralDirectorySize
-
+        result.evidence.centralDirectory={
+            offset:endRecord.offset,
+            entries:endRecord.entries,
+            centralDirectoryOffset:endRecord.centralDirectoryOffset,
+            centralDirectorySize:endRecord.centralDirectorySize
         };
 
+        const zip64=this.detectZip64(bytes,endRecord);
+        result.features.zip64=zip64.detected;
 
-        /*
-         * Detect ZIP64.
-         */
-
-        const zip64 =
-            this.detectZip64(
-                bytes,
-                endRecord
-            );
-
-
-        basicResult.features.zip64 =
-            zip64.detected;
-
-
-        if (zip64.detected) {
-
-            basicResult.findings.push({
-
-                id:
-                    "zip64-container",
-
-                severity:
-                    "INFO",
-
-                confidence:
-                    "HIGH",
-
-                title:
-                    "ZIP64 structures detected.",
-
-                description:
-                    "The archive uses ZIP64 extensions for large archive metadata.",
-
-                evidence:
-                    zip64.evidence,
-
-                recommendation:
-                    "Use ZIP64-aware parsers when processing this container."
-
+        if(zip64.detected){
+            result.findings.push({
+                id:"zip64-container",
+                severity:"INFO",
+                confidence:"HIGH",
+                title:"ZIP64 structures detected.",
+                description:"The archive uses ZIP64 extensions for large archive metadata.",
+                evidence:zip64.evidence,
+                recommendation:"Use ZIP64-aware parsers when processing this container."
             });
         }
 
+        const parsed=this.parseCentralDirectory(bytes,endRecord);
 
-        /*
-         * Parse central directory.
-         */
-
-        const entries =
-            this.parseCentralDirectory(
-                bytes,
-                endRecord
-            );
-
-
-        if (
-            entries.error
-        ) {
-
-            basicResult.status =
-                "invalid";
-
-            basicResult.findings.push({
-
-                id:
-                    "central-directory-parse-failed",
-
-                severity:
-                    "MEDIUM",
-
-                confidence:
-                    "HIGH",
-
-                title:
-                    "ZIP central directory could not be parsed completely.",
-
-                description:
-                    entries.error,
-
-                evidence: {
-
-                    centralDirectoryOffset:
-                        endRecord.centralDirectoryOffset,
-
-                    centralDirectorySize:
-                        endRecord.centralDirectorySize
-
+        if(parsed.error){
+            result.status="invalid";
+            result.entries=parsed.entries;
+            result.entryCount=parsed.entries.length;
+            result.findings.push({
+                id:"central-directory-parse-failed",
+                severity:"MEDIUM",
+                confidence:"HIGH",
+                title:"ZIP central directory could not be parsed completely.",
+                description:parsed.error,
+                evidence:{
+                    centralDirectoryOffset:endRecord.centralDirectoryOffset,
+                    centralDirectorySize:endRecord.centralDirectorySize,
+                    parsedEntries:parsed.entries.length
                 },
-
-                recommendation:
-                    "Treat the archive as structurally suspicious until it can be validated by another ZIP parser."
-
+                recommendation:"Treat the archive as structurally suspicious until it can be validated by another ZIP parser."
             });
-
-
-            return {
-
-                ...basicResult,
-
-                durationMs:
-                    Math.round(
-                        performance.now() -
-                        startedAt
-                    )
-
-            };
+            result.durationMs=Math.round(performance.now()-startedAt);
+            return result;
         }
 
+        result.entries=parsed.entries;
+        result.entryCount=parsed.entries.length;
 
-        basicResult.entries =
-            entries.entries;
-
-
-        basicResult.entryCount =
-            entries.entries.length;
-
-
-        /*
-         * Entry limit protection.
-         */
-
-        if (
-            entries.entries.length >
-            this.MAX_ENTRIES
-        ) {
-
-            basicResult.findings.push({
-
-                id:
-                    "entry-count-limit",
-
-                severity:
-                    "MEDIUM",
-
-                confidence:
-                    "HIGH",
-
-                title:
-                    "Archive contains an unusually large number of entries.",
-
-                description:
-                    `The archive contains ${entries.entries.length.toLocaleString()} entries.`,
-
-                evidence: {
-
-                    entryCount:
-                        entries.entries.length,
-
-                    limit:
-                        this.MAX_ENTRIES
-
+        if(parsed.entries.length>this.MAX_ENTRIES){
+            result.findings.push({
+                id:"entry-count-limit",
+                severity:"MEDIUM",
+                confidence:"HIGH",
+                title:"Archive contains an unusually large number of entries.",
+                description:`The archive contains ${parsed.entries.length.toLocaleString()} entries.`,
+                evidence:{
+                    entryCount:parsed.entries.length,
+                    limit:this.MAX_ENTRIES
                 },
-
-                recommendation:
-                    "Avoid blindly extracting the archive. Inspect the entry list before processing it."
-
+                recommendation:"Avoid blindly extracting the archive. Inspect the entry list before processing it."
             });
         }
 
+        this.analyzeEntries(result);
 
-        /*
-         * Analyze entry metadata.
-         */
+        const container=this.identifyContainer(result.entries);
+        result.containerType=container.type;
+        result.format=container.format;
+        result.evidence.containerMarkers=container.markers;
 
-        this.analyzeEntries(
-            basicResult
-        );
-
-
-        /*
-         * Identify the container.
-         */
-
-        const container =
-            this.identifyContainer(
-                basicResult.entries
-            );
-
-
-        basicResult.containerType =
-            container.type;
-
-        basicResult.format =
-            container.format;
-
-
-        basicResult.evidence.containerMarkers =
-            container.markers;
-
-
-        /*
-         * Add container finding.
-         */
-
-        if (
-            container.type !== "ZIP"
-        ) {
-
-            basicResult.findings.push({
-
-                id:
-                    `container-${container.type.toLowerCase()}`,
-
-                severity:
-                    "INFO",
-
-                confidence:
-                    "HIGH",
-
-                title:
-                    `${container.type} container identified.`,
-
-                description:
-                    container.description,
-
-                evidence: {
-
-                    markers:
-                        container.markers
-
-                },
-
-                recommendation:
-                    "Route the container to its specialized analyzer when available."
-
+        if(container.type!=="ZIP"){
+            result.findings.push({
+                id:`container-${container.type.toLowerCase()}`,
+                severity:"INFO",
+                confidence:"HIGH",
+                title:`${container.type} container identified.`,
+                description:container.description,
+                evidence:{markers:container.markers},
+                recommendation:"Route the container to its specialized analyzer when available."
             });
         }
 
+        const nested=this.detectNestedArchives(result.entries);
 
-        /*
-         * Nested archive detection.
-         */
-
-        const nestedArchives =
-            this.detectNestedArchives(
-                basicResult.entries
-            );
-
-
-        if (
-            nestedArchives.length > 0
-        ) {
-
-            basicResult.features.nestedArchives =
-                true;
-
-
-            basicResult.findings.push({
-
-                id:
-                    "nested-archives",
-
-                severity:
-                    "LOW",
-
-                confidence:
-                    "HIGH",
-
-                title:
-                    "Nested archive files detected.",
-
-                description:
-                    "The container contains one or more archive-like files.",
-
-                evidence: {
-
-                    entries:
-                        nestedArchives
-
-                },
-
-                recommendation:
-                    "Inspect nested archives separately if their contents are relevant to the investigation."
-
+        if(nested.length>0){
+            result.features.nestedArchives=true;
+            result.findings.push({
+                id:"nested-archives",
+                severity:"LOW",
+                confidence:"HIGH",
+                title:"Nested archive files detected.",
+                description:"The container contains one or more archive-like files.",
+                evidence:{entries:nested},
+                recommendation:"Inspect nested archives separately if their contents are relevant to the investigation."
             });
         }
 
-
-        /*
-         * Final status.
-         */
-
-        basicResult.status =
-            "completed";
-
-
-        basicResult.durationMs =
-            Math.round(
-                performance.now() -
-                startedAt
-            );
-
-
-        return basicResult;
+        result.status="completed";
+        result.durationMs=Math.round(performance.now()-startedAt);
+        return result;
     },
 
+    findEndOfCentralDirectory(bytes){
+        const minimumOffset=Math.max(0,bytes.length-0xFFFF-22);
 
-    findEndOfCentralDirectory(bytes) {
+        for(let offset=bytes.length-22;offset>=minimumOffset;offset--){
+            if(this.readUInt32LE(bytes,offset)!==this.ZIP_END_OF_CENTRAL_DIRECTORY)continue;
+            if(offset+22>bytes.length)continue;
 
-        /*
-         * EOCD can appear within the final
-         * 65,535 bytes plus its fixed structure.
-         */
+            const diskNumber=this.readUInt16LE(bytes,offset+4);
+            const centralDirectoryDisk=this.readUInt16LE(bytes,offset+6);
+            const entriesOnDisk=this.readUInt16LE(bytes,offset+8);
+            const totalEntries=this.readUInt16LE(bytes,offset+10);
+            const centralDirectorySize=this.readUInt32LE(bytes,offset+12);
+            const centralDirectoryOffset=this.readUInt32LE(bytes,offset+16);
+            const commentLength=this.readUInt16LE(bytes,offset+20);
 
-        const minimumOffset =
-            Math.max(
-                0,
-                bytes.length -
-                0xFFFF -
-                22
-            );
+            if(offset+22+commentLength>bytes.length)continue;
 
-
-        for (
-            let offset =
-                bytes.length - 22;
-
-            offset >= minimumOffset;
-
-            offset--
-        ) {
-
-            if (
-                this.readUInt32LE(
-                    bytes,
-                    offset
-                ) !==
-                this.ZIP_END_OF_CENTRAL_DIRECTORY
-            ) {
-
-                continue;
-            }
-
-
-            if (
-                offset + 22 >
-                bytes.length
-            ) {
-
-                continue;
-            }
-
-
-            const diskNumber =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 4
-                );
-
-
-            const centralDirectoryDisk =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 6
-                );
-
-
-            const entriesOnDisk =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 8
-                );
-
-
-            const totalEntries =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 10
-                );
-
-
-            const centralDirectorySize =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 12
-                );
-
-
-            const centralDirectoryOffset =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 16
-                );
-
-
-            const commentLength =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 20
-                );
-
-
-            if (
-                offset +
-                22 +
-                commentLength >
-                bytes.length
-            ) {
-
-                continue;
-            }
-
-
-            return {
-
+            return{
                 offset,
-
                 diskNumber,
-
                 centralDirectoryDisk,
-
                 entriesOnDisk,
-
-                entries:
-                    totalEntries,
-
+                entries:totalEntries,
                 centralDirectorySize,
-
                 centralDirectoryOffset
-
             };
         }
-
 
         return null;
     },
 
+    detectZip64(bytes,endRecord){
+        const evidence=[];
 
-    detectZip64(
-        bytes,
-        endRecord
-    ) {
-
-        const evidence = [];
-
-
-        /*
-         * Standard ZIP64 trigger:
-         * EOCD fields contain maximum
-         * 16/32-bit values.
-         */
-
-        if (
-            endRecord.entries === 0xFFFF ||
-            endRecord.centralDirectorySize ===
-                0xFFFFFFFF ||
-            endRecord.centralDirectoryOffset ===
-                0xFFFFFFFF
-        ) {
-
-            evidence.push(
-                "ZIP64 marker values present in EOCD."
-            );
+        if(
+            endRecord.entries===0xFFFF||
+            endRecord.centralDirectorySize===0xFFFFFFFF||
+            endRecord.centralDirectoryOffset===0xFFFFFFFF
+        ){
+            evidence.push("ZIP64 marker values present in EOCD.");
         }
 
+        const start=Math.max(0,endRecord.offset-256);
 
-        /*
-         * Search for ZIP64 EOCD locator
-         * immediately before EOCD.
-         */
-
-        const searchStart =
-            Math.max(
-                0,
-                endRecord.offset - 64
-            );
-
-
-        for (
-            let offset =
-                endRecord.offset - 20;
-
-            offset >= searchStart;
-
-            offset--
-        ) {
-
-            if (
-                this.readUInt32LE(
-                    bytes,
-                    offset
-                ) ===
-                this.ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR
-            ) {
-
-                evidence.push(
-                    "ZIP64 EOCD locator detected."
-                );
-
+        for(let offset=endRecord.offset-20;offset>=start;offset--){
+            if(this.readUInt32LE(bytes,offset)===this.ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR){
+                evidence.push("ZIP64 EOCD locator detected.");
                 break;
             }
         }
 
-
-        /*
-         * Search nearby for ZIP64 EOCD.
-         */
-
-        const zip64SearchStart =
-            Math.max(
-                0,
-                endRecord.offset - 256
-            );
-
-
-        for (
-            let offset =
-                endRecord.offset - 56;
-
-            offset >= zip64SearchStart;
-
-            offset--
-        ) {
-
-            if (
-                this.readUInt32LE(
-                    bytes,
-                    offset
-                ) ===
-                this.ZIP64_END_OF_CENTRAL_DIRECTORY
-            ) {
-
-                evidence.push(
-                    "ZIP64 EOCD record detected."
-                );
-
+        for(let offset=endRecord.offset-56;offset>=start;offset--){
+            if(this.readUInt32LE(bytes,offset)===this.ZIP64_END_OF_CENTRAL_DIRECTORY){
+                evidence.push("ZIP64 EOCD record detected.");
                 break;
             }
         }
 
-
-        return {
-
-            detected:
-                evidence.length > 0,
-
+        return{
+            detected:evidence.length>0,
             evidence
-
         };
     },
 
+    parseCentralDirectory(bytes,endRecord){
+        const entries=[];
+        let offset=endRecord.centralDirectoryOffset;
+        const declaredEnd=
+            endRecord.centralDirectoryOffset+
+            endRecord.centralDirectorySize;
 
-    parseCentralDirectory(
-        bytes,
-        endRecord
-    ) {
+        if(endRecord.centralDirectoryOffset>bytes.length){
+            return{
+                error:"The declared central directory offset is outside the file.",
+                entries
+            };
+        }
 
-        const entries = [];
+        if(declaredEnd>bytes.length){
+            return{
+                error:"The declared central directory extends beyond the file.",
+                entries
+            };
+        }
 
+        const endOffset=declaredEnd;
 
-        let offset =
-            endRecord.centralDirectoryOffset;
-
-
-        const endOffset =
-            Math.min(
-                bytes.length,
-                endRecord.centralDirectoryOffset +
-                endRecord.centralDirectorySize
-            );
-
-
-        while (
-            offset + 46 <=
-            endOffset
-        ) {
-
-            const signature =
-                this.readUInt32LE(
-                    bytes,
-                    offset
-                );
-
-
-            if (
-                signature !==
+        while(offset+46<=endOffset){
+            if(
+                this.readUInt32LE(bytes,offset)!==
                 this.ZIP_CENTRAL_DIRECTORY_HEADER
-            ) {
-
-                break;
-            }
-
-
-            const versionMadeBy =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 4
-                );
-
-
-            const versionNeeded =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 6
-                );
-
-
-            const flags =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 8
-                );
-
-
-            const compressionMethod =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 10
-                );
-
-
-            const modifiedTime =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 12
-                );
-
-
-            const modifiedDate =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 14
-                );
-
-
-            const crc32 =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 16
-                );
-
-
-            const compressedSize =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 20
-                );
-
-
-            const uncompressedSize =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 24
-                );
-
-
-            const fileNameLength =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 28
-                );
-
-
-            const extraLength =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 30
-                );
-
-
-            const commentLength =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 32
-                );
-
-
-            const diskStart =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 34
-                );
-
-
-            const internalAttributes =
-                this.readUInt16LE(
-                    bytes,
-                    offset + 36
-                );
-
-
-            const externalAttributes =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 38
-                );
-
-
-            const localHeaderOffset =
-                this.readUInt32LE(
-                    bytes,
-                    offset + 42
-                );
-
-
-            const totalHeaderSize =
-                46 +
-                fileNameLength +
-                extraLength +
-                commentLength;
-
-
-            if (
-                offset +
-                totalHeaderSize >
-                endOffset
-            ) {
-
-                return {
-
-                    error:
-                        "A central directory entry extends beyond the declared central directory bounds.",
-
+            ){
+                return{
+                    error:"Unexpected data was found where a central directory entry was expected.",
                     entries
-
                 };
             }
 
+            const versionMadeBy=this.readUInt16LE(bytes,offset+4);
+            const versionNeeded=this.readUInt16LE(bytes,offset+6);
+            const flags=this.readUInt16LE(bytes,offset+8);
+            const compressionMethod=this.readUInt16LE(bytes,offset+10);
+            const modifiedTime=this.readUInt16LE(bytes,offset+12);
+            const modifiedDate=this.readUInt16LE(bytes,offset+14);
+            const crc32=this.readUInt32LE(bytes,offset+16);
+            const compressedSize=this.readUInt32LE(bytes,offset+20);
+            const uncompressedSize=this.readUInt32LE(bytes,offset+24);
+            const fileNameLength=this.readUInt16LE(bytes,offset+28);
+            const extraLength=this.readUInt16LE(bytes,offset+30);
+            const commentLength=this.readUInt16LE(bytes,offset+32);
+            const diskStart=this.readUInt16LE(bytes,offset+34);
+            const internalAttributes=this.readUInt16LE(bytes,offset+36);
+            const externalAttributes=this.readUInt32LE(bytes,offset+38);
+            const localHeaderOffset=this.readUInt32LE(bytes,offset+42);
 
-            const fileNameBytes =
-                bytes.slice(
-                    offset + 46,
-                    offset +
-                    46 +
-                    fileNameLength
-                );
+            const totalHeaderSize=
+                46+
+                fileNameLength+
+                extraLength+
+                commentLength;
 
+            if(offset+totalHeaderSize>endOffset){
+                return{
+                    error:"A central directory entry extends beyond the declared central directory bounds.",
+                    entries
+                };
+            }
 
-            const extraBytes =
-                bytes.slice(
-                    offset +
-                    46 +
-                    fileNameLength,
+            const fileNameBytes=bytes.slice(
+                offset+46,
+                offset+46+fileNameLength
+            );
 
-                    offset +
-                    46 +
-                    fileNameLength +
-                    extraLength
-                );
+            const extraBytes=bytes.slice(
+                offset+46+fileNameLength,
+                offset+46+fileNameLength+extraLength
+            );
 
+            const commentBytes=bytes.slice(
+                offset+46+fileNameLength+extraLength,
+                offset+totalHeaderSize
+            );
 
-            const commentBytes =
-                bytes.slice(
-                    offset +
-                    46 +
-                    fileNameLength +
-                    extraLength,
+            const fileName=this.decodeFileName(
+                fileNameBytes,
+                flags
+            );
 
-                    offset +
-                    totalHeaderSize
-                );
+            const comment=this.decodeText(commentBytes);
+            const extraFields=this.parseExtraFields(extraBytes);
+            const directory=fileName.endsWith("/");
+            const encrypted=Boolean(flags&0x0001);
 
-
-            const fileName =
-                this.decodeFileName(
-                    fileNameBytes,
-                    flags
-                );
-
-
-            const comment =
-                this.decodeText(
-                    commentBytes
-                );
-
-
-            const extraFields =
-                this.parseExtraFields(
-                    extraBytes
-                );
-
-
-            const directory =
-                fileName.endsWith("/");
-
-
-            const encrypted =
-                Boolean(
-                    flags & 0x0001
-                );
-
-
-            const entry = {
-
-                name:
-                    fileName,
-
-                type:
-                    directory
-                        ? "directory"
-                        : "file",
-
+            entries.push({
+                name:fileName,
+                type:directory?"directory":"file",
                 compressedSize,
-
                 uncompressedSize,
-
                 compressionMethod,
+                compression:this.getCompressionName(compressionMethod),
+                crc32:"0x"+crc32.toString(16).padStart(8,"0"),
+                flags,
+                encrypted,
+                versionMadeBy,
+                versionNeeded,
+                modifiedTime,
+                modifiedDate,
+                diskStart,
+                internalAttributes,
+                externalAttributes,
+                localHeaderOffset,
+                comment,
+                extraFields,
+                zip64:
+                    compressedSize===0xFFFFFFFF||
+                    uncompressedSize===0xFFFFFFFF||
+                    localHeaderOffset===0xFFFFFFFF||
+                    diskStart===0xFFFF,
+                path:{
+                    traversal:this.hasPathTraversal(fileName),
+                    absolute:this.isAbsolutePath(fileName)
+                }
+            });
 
- 
+            offset+=totalHeaderSize;
+        }
+
+        if(offset!==endOffset){
+            return{
+                error:"The central directory contains trailing or unparsed bytes.",
+                entries
+            };
+        }
+
+        return{entries};
+    },
+
+    parseExtraFields(bytes){
+        const fields=[];
+        let offset=0;
+
+        while(offset+4<=bytes.length){
+            const id=this.readUInt16LE(bytes,offset);
+            const size=this.readUInt16LE(bytes,offset+2);
+            const start=offset+4;
+            const end=start+size;
+
+            if(end>bytes.length)break;
+
+            fields.push({
+                id:"0x"+id.toString(16).padStart(4,"0"),
+                size
+            });
+
+            offset=end;
+        }
+
+        return fields;
+    },
+
+    analyzeEntries(result){
+        const entries=result.entries;
+        const names=new Set();
+
+        let duplicateNames=0;
+        let compressedBytes=0;
+        let uncompressedBytes=0;
+        let encryptedEntries=0;
+        let directories=0;
+        let files=0;
+        let traversal=[];
+        let absolute=[];
+        let suspicious=[];
+
+        for(const entry of entries){
+            if(names.has(entry.name)){
+                duplicateNames++;
+            }else{
+                names.add(entry.name);
+            }
+
+            if(entry.type==="directory"){
+                directories++;
+            }else{
+                files++;
+            }
+
+            compressedBytes+=entry.compressedSize;
+            uncompressedBytes+=entry.uncompressedSize;
+
+            if(entry.encrypted)encryptedEntries++;
+            if(entry.path.traversal)traversal.push(entry.name);
+            if(entry.path.absolute)absolute.push(entry.name);
+
+            if(
+                entry.type!=="directory"&&
+                entry.compressedSize>0&&
+                entry.uncompressedSize>=this.SUSPICIOUS_UNCOMPRESSED_SIZE
+            ){
+                const ratio=
+                    entry.uncompressedSize/
+                    entry.compressedSize;
+
+                if(ratio>=this.SUSPICIOUS_COMPRESSION_RATIO){
+                    suspicious.push({
+                        name:entry.name,
+                        compressedSize:entry.compressedSize,
+                        uncompressedSize:entry.uncompressedSize,
+                        ratio
+                    });
+                }
+            }
+        }
+
+        result.statistics.compressedBytes=compressedBytes;
+        result.statistics.uncompressedBytes=uncompressedBytes;
+        result.statistics.encryptedEntries=encryptedEntries;
+        result.statistics.directories=directories;
+        result.statistics.files=files;
+        result.statistics.compressionRatio=
+            compressedBytes>0?
+            uncompressedBytes/compressedBytes:
+            null;
+
+        if(duplicateNames>0){
+            result.features.duplicateNames=true;
+            result.findings.push({
+                id:"duplicate-entry-names",
+                severity:"MEDIUM",
+                confidence:"HIGH",
+                title:"Duplicate archive entry names detected.",
+                description:`${duplicateNames} duplicate entry name(s) were found.`,
+                evidence:{duplicateCount:duplicateNames},
+                recommendation:"Inspect duplicate entries because different extraction tools may handle them differently."
+            });
+        }
+
+        if(encryptedEntries>0){
+            result.features.encrypted=true;
+            result.findings.push({
+                id:"encrypted-entries",
+                severity:"INFO",
+                confidence:"HIGH",
+                title:"Encrypted archive entries detected.",
+                description:`${encryptedEntries} archive entry or entries use ZIP encryption.`,
+                evidence:{encryptedEntries},
+                recommendation:"Encrypted content cannot be fully inspected without the required credentials."
+            });
+        }
+
+        if(traversal.length>0){
+            result.features.pathTraversal=true;
+            result.findings.push({
+                id:"path-traversal",
+                severity:"HIGH",
+                confidence:"HIGH",
+                title:"Path traversal entry detected.",
+                description:"One or more archive entries contain path traversal components such as ../.",
+                evidence:{entries:traversal.slice(0,50)},
+                recommendation:"Do not extract the archive blindly. Normalize and validate every destination path."
+            });
+        }
+
+        if(absolute.length>0){
+            result.features.absolutePaths=true;
+            result.findings.push({
+                id:"absolute-paths",
+                severity:"MEDIUM",
+                confidence:"HIGH",
+                title:"Absolute archive paths detected.",
+                description:"One or more entries use an absolute filesystem path.",
+                evidence:{entries:absolute.slice(0,50)},
+                recommendation:"Do not use archive entry paths directly as filesystem destinations."
+            });
+        }
+
+        if(suspicious.length>0){
+            result.features.suspiciousCompression=true;
+            result.findings.push({
+                id:"suspicious-compression-ratio",
+                severity:"LOW",
+                confidence:"MEDIUM",
+                title:"Very high compression ratio detected.",
+                description:`${suspicious.length} file(s) have a very high declared compression ratio.`,
+                evidence:{
+                    threshold:this.SUSPICIOUS_COMPRESSION_RATIO,
+                    minimumUncompressedSize:this.SUSPICIOUS_UNCOMPRESSED_SIZE,
+                    entries:suspicious.slice(0,50)
+                },
+                recommendation:"Inspect unusually compressed content before automatic extraction."
+            });
+        }
+    },
+
+    identifyContainer(entries){
+        const names=new Set(entries.map(entry=>entry.name));
+        let markers=[];
+
+        const hasManifest=names.has("AndroidManifest.xml");
+        const hasDex=Array.from(names).some(
+            name=>/^classes(?:\d+)?\.dex$/i.test(name)
+        );
+
+        if(hasManifest&&hasDex){
+            markers=["AndroidManifest.xml","classes*.dex"];
+            return{
+                type:"APK",
+                format:"Android Package",
+                description:"The ZIP container contains structural markers characteristic of an Android application package.",
+                markers
+            };
+        }
+
+        if(names.has("META-INF/MANIFEST.MF")){
+            markers=["META-INF/MANIFEST.MF"];
+            return{
+                type:"JAR",
+                format:"Java Archive",
+                description:"The ZIP container contains the standard JAR manifest 
