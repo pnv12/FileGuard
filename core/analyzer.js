@@ -1,7 +1,7 @@
 "use strict";
 
 const FileGuardAnalyzer={
-VERSION:"1.4.0",
+VERSION:"1.5.0",
 
 async analyze(file,onProgress=null){
 this.validateFile(file);
@@ -74,6 +74,25 @@ archive
 
 this.reportProgress(onProgress,"findings","completed",findings);
 
+this.reportProgress(onProgress,"evidence","running");
+
+const evidence=this.buildEvidence(
+detection,
+archive,
+findings
+);
+
+const evidenceSummary=
+window.FileGuardEvidence&&
+typeof window.FileGuardEvidence.summarize==="function"
+?window.FileGuardEvidence.summarize(evidence)
+:null;
+
+this.reportProgress(onProgress,"evidence","completed",{
+evidence,
+summary:evidenceSummary
+});
+
 const durationMs=Math.round(performance.now()-startedAt);
 
 const structure=archive?{
@@ -105,6 +124,8 @@ archive,
 structure,
 metadata:generic?generic.metadata:null,
 findings,
+evidence,
+evidenceSummary,
 analyzers:{
 generic:Boolean(generic),
 archive:Boolean(archive),
@@ -114,6 +135,39 @@ apk:false
 
 this.reportProgress(onProgress,"complete","completed",result);
 return result;
+},
+
+buildEvidence(detection,archive,findings){
+if(!window.FileGuardEvidence){
+return[];
+}
+
+const detectorEvidence=
+typeof window.FileGuardEvidence.fromDetection==="function"
+?window.FileGuardEvidence.fromDetection(detection)
+:[];
+
+const archiveEvidence=
+typeof window.FileGuardEvidence.fromArchive==="function"
+?window.FileGuardEvidence.fromArchive(archive)
+:[];
+
+const findingEvidence=
+typeof window.FileGuardEvidence.fromFindings==="function"
+?window.FileGuardEvidence.fromFindings(findings)
+:[];
+
+return typeof window.FileGuardEvidence.merge==="function"
+?window.FileGuardEvidence.merge(
+detectorEvidence,
+archiveEvidence,
+findingEvidence
+)
+:[
+...detectorEvidence,
+...archiveEvidence,
+...findingEvidence
+];
 },
 
 buildIdentity(file){
