@@ -4,37 +4,47 @@
  * FILEGUARD
  * Core Analyzer
  *
- * V1.1
+ * V1.2
  *
- * Central orchestration layer for file analysis.
+ * Central orchestration layer.
  *
- * Responsibilities:
- * - validate input
- * - collect file identity
- * - calculate cryptographic hashes
- * - run the generic analyzer
- * - expose analysis progress
- * - return one normalized analysis result
+ * Pipeline:
+ *
+ * File
+ * ↓
+ * Identity
+ * ↓
+ * Cryptographic Hashes
+ * ↓
+ * File Detector
+ * ↓
+ * Generic Analyzer
+ * ↓
+ * Findings
+ * ↓
+ * Normalized Result
  */
 
 
 const FileGuardAnalyzer = {
 
-    /*
-     * ─────────────────────────────
-     * PUBLIC API
-     * ─────────────────────────────
-     */
+    VERSION: "1.2.0",
 
-    async analyze(file, onProgress = null) {
+
+    async analyze(
+        file,
+        onProgress = null
+    ) {
 
         this.validateFile(file);
 
-        const startedAt = performance.now();
+
+        const startedAt =
+            performance.now();
 
 
         /*
-         * STEP 1
+         * STEP 01
          * FILE IDENTITY
          */
 
@@ -58,7 +68,7 @@ const FileGuardAnalyzer = {
 
 
         /*
-         * STEP 2
+         * STEP 02
          * CRYPTOGRAPHIC HASHES
          */
 
@@ -71,8 +81,10 @@ const FileGuardAnalyzer = {
 
         if (
             !window.FileGuardHash ||
-            typeof window.FileGuardHash.calculateAll !== "function"
+            typeof window.FileGuardHash.calculateAll !==
+                "function"
         ) {
+
             throw new Error(
                 "FileGuardHash module is not available."
             );
@@ -80,7 +92,9 @@ const FileGuardAnalyzer = {
 
 
         const hashes =
-            await window.FileGuardHash.calculateAll(file);
+            await window.FileGuardHash.calculateAll(
+                file
+            );
 
 
         this.reportProgress(
@@ -92,7 +106,45 @@ const FileGuardAnalyzer = {
 
 
         /*
-         * STEP 3
+         * STEP 03
+         * FILE DETECTION
+         */
+
+        this.reportProgress(
+            onProgress,
+            "detection",
+            "running"
+        );
+
+
+        if (
+            !window.FileGuardDetector ||
+            typeof window.FileGuardDetector.detect !==
+                "function"
+        ) {
+
+            throw new Error(
+                "FileGuardDetector module is not available."
+            );
+        }
+
+
+        const detection =
+            await window.FileGuardDetector.detect(
+                file
+            );
+
+
+        this.reportProgress(
+            onProgress,
+            "detection",
+            "completed",
+            detection
+        );
+
+
+        /*
+         * STEP 04
          * GENERIC ANALYSIS
          */
 
@@ -108,10 +160,14 @@ const FileGuardAnalyzer = {
 
         if (
             window.FileGuardGenericAnalyzer &&
-            typeof window.FileGuardGenericAnalyzer.analyze === "function"
+            typeof window.FileGuardGenericAnalyzer.analyze ===
+                "function"
         ) {
+
             generic =
-                await window.FileGuardGenericAnalyzer.analyze(file);
+                await window.FileGuardGenericAnalyzer.analyze(
+                    file
+                );
         }
 
 
@@ -124,13 +180,21 @@ const FileGuardAnalyzer = {
 
 
         /*
-         * STEP 4
-         * INITIAL FINDINGS
+         * STEP 05
+         * FINDINGS
          */
+
+        this.reportProgress(
+            onProgress,
+            "findings",
+            "running"
+        );
+
 
         const findings =
             this.collectInitialFindings(
                 identity,
+                detection,
                 generic
             );
 
@@ -149,29 +213,48 @@ const FileGuardAnalyzer = {
 
         const durationMs =
             Math.round(
-                performance.now() - startedAt
+                performance.now() -
+                startedAt
             );
 
 
         const result = {
 
-            status: "completed",
+            status:
+                "completed",
 
-            analyzer: "generic",
+            analyzer:
+                "core",
+
+            analyzerVersion:
+                this.VERSION,
 
             durationMs,
 
             file: {
-                name: file.name,
-                size: file.size,
-                type: file.type || "unknown",
+
+                name:
+                    file.name,
+
+                size:
+                    file.size,
+
+                type:
+                    file.type ||
+                    "unknown",
+
                 lastModified:
-                    file.lastModified || null
+                    file.lastModified ||
+                    null
+
             },
+
 
             identity,
 
             hashes,
+
+            detection,
 
             structure:
                 generic
@@ -186,9 +269,16 @@ const FileGuardAnalyzer = {
             findings,
 
             analyzers: {
-                generic: Boolean(generic),
-                archive: false,
-                apk: false
+
+                generic:
+                    Boolean(generic),
+
+                archive:
+                    false,
+
+                apk:
+                    false
+
             }
 
         };
@@ -206,29 +296,28 @@ const FileGuardAnalyzer = {
     },
 
 
-    /*
-     * ─────────────────────────────
-     * FILE IDENTITY
-     * ─────────────────────────────
-     */
-
     buildIdentity(file) {
 
         return {
 
-            name: file.name,
+            name:
+                file.name,
 
             extension:
-                this.getExtension(file.name),
+                this.getExtension(
+                    file.name
+                ),
 
             mimeType:
-                file.type || "unknown",
+                file.type ||
+                "unknown",
 
             size:
                 file.size,
 
             lastModified:
-                file.lastModified || null,
+                file.lastModified ||
+                null,
 
             lastModifiedISO:
                 file.lastModified
@@ -241,20 +330,9 @@ const FileGuardAnalyzer = {
     },
 
 
-    /*
-     * ─────────────────────────────
-     * INITIAL FINDINGS
-     * ─────────────────────────────
-     *
-     * V1 intentionally keeps this
-     * conservative.
-     *
-     * No malware verdict is generated
-     * without actual security evidence.
-     */
-
     collectInitialFindings(
         identity,
+        detection,
         generic
     ) {
 
@@ -262,26 +340,75 @@ const FileGuardAnalyzer = {
 
 
         /*
-         * Extension / MIME mismatch
-         *
-         * This is only an informational
-         * structural signal at this stage.
+         * Detector anomalies become
+         * normalized security findings.
+         */
+
+        if (
+            detection &&
+            Array.isArray(
+                detection.anomalies
+            )
+        ) {
+
+            for (
+                const anomaly
+                of detection.anomalies
+            ) {
+
+                findings.push({
+
+                    id:
+                        `detector-${anomaly.id}`,
+
+                    severity:
+                        anomaly.severity ||
+                        "INFO",
+
+                    confidence:
+                        detection.confidenceLevel ||
+                        "MEDIUM",
+
+                    title:
+                        anomaly.title ||
+                        "File detection anomaly",
+
+                    description:
+                        "The file detector identified a characteristic that requires review.",
+
+                    evidence:
+                        anomaly.evidence ||
+                        null,
+
+                    recommendation:
+                        this.getFindingRecommendation(
+                            anomaly.id
+                        )
+
+                });
+            }
+        }
+
+
+        /*
+         * Preserve the existing generic MIME
+         * mismatch logic as a fallback.
          */
 
         if (
             generic &&
             generic.identity &&
-            generic.identity.mimeType !== "unknown" &&
-            identity.extension
+            generic.identity.mimeType !==
+                "unknown" &&
+            identity.extension &&
+            !detection
         ) {
 
             const extension =
                 identity.extension;
 
-
             const mimeType =
                 generic.identity.mimeType;
-
 
             const expectedExtensions =
                 this.getExpectedExtensions(
@@ -335,13 +462,37 @@ const FileGuardAnalyzer = {
     },
 
 
-    /*
-     * ─────────────────────────────
-     * MIME MAPPING
-     * ─────────────────────────────
-     */
+    getFindingRecommendation(
+        anomalyId
+    ) {
 
-    getExpectedExtensions(mimeType) {
+        const recommendations = {
+
+            "unknown-format":
+                "Treat the file as an unknown binary until its structure can be inspected.",
+
+            "extension-mismatch":
+                "Verify the file source and inspect the detected format before opening it.",
+
+            "mime-mismatch":
+                "Do not rely on the browser MIME type alone. Verify the file structure and source.",
+
+            "multiple-signatures":
+                "Inspect the file structure and container contents before drawing a security conclusion."
+
+        };
+
+
+        return (
+            recommendations[anomalyId] ||
+            "Review the associated evidence before taking further action."
+        );
+    },
+
+
+    getExpectedExtensions(
+        mimeType
+    ) {
 
         const map = {
 
@@ -402,15 +553,12 @@ const FileGuardAnalyzer = {
         };
 
 
-        return map[mimeType] || [];
+        return (
+            map[mimeType] ||
+            []
+        );
     },
 
-
-    /*
-     * ─────────────────────────────
-     * EXTENSION
-     * ─────────────────────────────
-     */
 
     getExtension(fileName) {
 
@@ -418,6 +566,7 @@ const FileGuardAnalyzer = {
             typeof fileName !== "string" ||
             fileName.length === 0
         ) {
+
             return "";
         }
 
@@ -430,21 +579,18 @@ const FileGuardAnalyzer = {
             lastDot <= 0 ||
             lastDot === fileName.length - 1
         ) {
+
             return "";
         }
 
 
         return fileName
-            .slice(lastDot + 1)
+            .slice(
+                lastDot + 1
+            )
             .toLowerCase();
     },
 
-
-    /*
-     * ─────────────────────────────
-     * PROGRESS
-     * ─────────────────────────────
-     */
 
     reportProgress(
         callback,
@@ -454,8 +600,10 @@ const FileGuardAnalyzer = {
     ) {
 
         if (
-            typeof callback !== "function"
+            typeof callback !==
+                "function"
         ) {
+
             return;
         }
 
@@ -475,12 +623,6 @@ const FileGuardAnalyzer = {
     },
 
 
-    /*
-     * ─────────────────────────────
-     * VALIDATION
-     * ─────────────────────────────
-     */
-
     validateFile(file) {
 
         if (!(file instanceof File)) {
@@ -493,10 +635,6 @@ const FileGuardAnalyzer = {
 
 };
 
-
-/*
- * Expose the analyzer globally.
- */
 
 window.FileGuardAnalyzer =
     FileGuardAnalyzer;
