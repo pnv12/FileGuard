@@ -200,9 +200,19 @@
 
                 <div
                     class="analysis-step"
-                    data-step="complete"
+                    data-step="correlation"
                 >
                     <span class="step-index">07</span>
+                    <span class="step-name">CORRELATION</span>
+                    <span class="step-status">WAITING</span>
+                </div>
+
+
+                <div
+                    class="analysis-step"
+                    data-step="complete"
+                >
+                    <span class="step-index">08</span>
                     <span class="step-name">COMPLETE</span>
                     <span class="step-status">WAITING</span>
                 </div>
@@ -258,6 +268,7 @@
                         OVERVIEW
                     </button>
 
+
                     <button
                         class="workspace-tab"
                         data-panel="identity"
@@ -265,6 +276,7 @@
                     >
                         IDENTITY
                     </button>
+
 
                     <button
                         class="workspace-tab"
@@ -274,6 +286,7 @@
                         STRUCTURE
                     </button>
 
+
                     <button
                         class="workspace-tab"
                         data-panel="security"
@@ -281,6 +294,7 @@
                     >
                         SECURITY
                     </button>
+
 
                     <button
                         class="workspace-tab"
@@ -290,6 +304,7 @@
                         NETWORK
                     </button>
 
+
                     <button
                         class="workspace-tab"
                         data-panel="metadata"
@@ -298,6 +313,7 @@
                         METADATA
                     </button>
 
+
                     <button
                         class="workspace-tab"
                         data-panel="files"
@@ -305,6 +321,7 @@
                     >
                         FILES
                     </button>
+
 
                     <button
                         class="workspace-tab"
@@ -439,7 +456,7 @@
     <script src="core/findings.js"></script>
 
     <script src="core/correlation.js"></script>
-    
+
     <script src="core/analyzer.js"></script>
 
     <script src="ui/upload.js"></script>
