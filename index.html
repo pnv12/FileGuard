@@ -34,9 +34,7 @@
 <div id="app">
 
 
-    <!-- ═══════════════════════════════════════
-         HEADER
-    ═══════════════════════════════════════ -->
+    <!-- HEADER -->
 
     <header class="topbar">
 
@@ -77,10 +75,6 @@
 
 
 
-    <!-- ═══════════════════════════════════════
-         MAIN
-    ═══════════════════════════════════════ -->
-
     <main class="main">
 
 
@@ -117,9 +111,7 @@
 
 
 
-        <!-- ═══════════════════════════════════════
-             FILE INPUT
-        ═══════════════════════════════════════ -->
+        <!-- FILE INPUT -->
 
         <section
             class="upload-section"
@@ -131,26 +123,21 @@
                 class="drop-zone"
             >
 
-
                 <div class="drop-corner corner-top-left"></div>
-
                 <div class="drop-corner corner-top-right"></div>
-
                 <div class="drop-corner corner-bottom-left"></div>
-
                 <div class="drop-corner corner-bottom-right"></div>
 
 
                 <input
                     id="file-input"
+                    class="file-input"
                     type="file"
-                    hidden
-                    aria-hidden="true"
+                    aria-label="Select a file for analysis"
                 >
 
 
                 <div class="drop-content">
-
 
                     <div class="drop-meta">
 
@@ -181,10 +168,11 @@
                     </p>
 
 
-                    <button
+                    <label
                         id="select-file-button"
                         class="primary-button"
-                        type="button"
+                        for="file-input"
+                        role="button"
                     >
 
                         <span>
@@ -198,7 +186,7 @@
                             →
                         </span>
 
-                    </button>
+                    </label>
 
 
                     <div class="drop-note">
@@ -215,16 +203,13 @@
 
 
 
-        <!-- ═══════════════════════════════════════
-             ANALYSIS WORKSPACE
-        ═══════════════════════════════════════ -->
+        <!-- ANALYSIS WORKSPACE -->
 
         <section
             id="analysis-section"
             class="analysis-section hidden"
             aria-labelledby="analysis-title"
         >
-
 
             <div class="section-header">
 
@@ -261,16 +246,13 @@
 
 
 
-        <!-- ═══════════════════════════════════════
-             RESULT WORKSPACE
-        ═══════════════════════════════════════ -->
+        <!-- RESULT WORKSPACE -->
 
         <section
             id="result-section"
             class="result-section hidden"
             aria-labelledby="result-title"
         >
-
 
             <div class="section-header">
 
@@ -301,9 +283,7 @@
 
 
 
-        <!-- ═══════════════════════════════════════
-             FUTURE WORKSPACE
-        ═══════════════════════════════════════ -->
+        <!-- ANALYSIS WORKSPACE -->
 
         <section
             id="workspace-section"
@@ -395,9 +375,7 @@
 
 
 
-    <!-- ═══════════════════════════════════════
-         FOOTER
-    ═══════════════════════════════════════ -->
+    <!-- FOOTER -->
 
     <footer class="footer">
 
@@ -433,10 +411,7 @@
 
 
 
-<!-- ═══════════════════════════════════════
-     APPLICATION MODULES
-═══════════════════════════════════════ -->
-
+<!-- APPLICATION MODULES -->
 
 <script src="utils/hash.js"></script>
 
