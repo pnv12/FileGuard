@@ -4,7 +4,7 @@
  * FILEGUARD
  * Core Analyzer
  *
- * V1.2
+ * V1.3
  *
  * Central orchestration layer.
  *
@@ -16,7 +16,9 @@
  * ↓
  * Cryptographic Hashes
  * ↓
- * File Detector
+ * File Detection
+ * ↓
+ * Specialized Analyzer
  * ↓
  * Generic Analyzer
  * ↓
@@ -28,7 +30,7 @@
 
 const FileGuardAnalyzer = {
 
-    VERSION: "1.2.0",
+    VERSION: "1.3.0",
 
 
     async analyze(
@@ -145,6 +147,58 @@ const FileGuardAnalyzer = {
 
         /*
          * STEP 04
+         * SPECIALIZED ANALYSIS
+         *
+         * ZIP-based formats are routed to
+         * the archive analyzer.
+         */
+
+        let archive =
+            null;
+
+
+        const archiveCapable =
+            detection &&
+            (
+                detection.formatId === "zip" ||
+                detection.formatId === "docx" ||
+                detection.formatId === "xlsx" ||
+                detection.formatId === "pptx" ||
+                detection.formatId === "jar"
+            );
+
+
+        if (
+            archiveCapable &&
+            window.FileGuardArchiveAnalyzer &&
+            typeof window.FileGuardArchiveAnalyzer.analyze ===
+                "function"
+        ) {
+
+            this.reportProgress(
+                onProgress,
+                "archive",
+                "running"
+            );
+
+
+            archive =
+                await window.FileGuardArchiveAnalyzer.analyze(
+                    file
+                );
+
+
+            this.reportProgress(
+                onProgress,
+                "archive",
+                "completed",
+                archive
+            );
+        }
+
+
+        /*
+         * STEP 05
          * GENERIC ANALYSIS
          */
 
@@ -180,7 +234,7 @@ const FileGuardAnalyzer = {
 
 
         /*
-         * STEP 05
+         * STEP 06
          * FINDINGS
          */
 
@@ -195,7 +249,8 @@ const FileGuardAnalyzer = {
             this.collectInitialFindings(
                 identity,
                 detection,
-                generic
+                generic,
+                archive
             );
 
 
@@ -256,10 +311,34 @@ const FileGuardAnalyzer = {
 
             detection,
 
+            archive,
+
             structure:
-                generic
-                    ? generic.structure
-                    : null,
+                archive
+                    ? {
+                        available:
+                            true,
+
+                        status:
+                            archive.status,
+
+                        containerType:
+                            archive.containerType,
+
+                        entryCount:
+                            archive.entryCount,
+
+                        statistics:
+                            archive.statistics,
+
+                        features:
+                            archive.features
+                    }
+                    : (
+                        generic
+                            ? generic.structure
+                            : null
+                    ),
 
             metadata:
                 generic
@@ -274,7 +353,7 @@ const FileGuardAnalyzer = {
                     Boolean(generic),
 
                 archive:
-                    false,
+                    Boolean(archive),
 
                 apk:
                     false
@@ -333,15 +412,15 @@ const FileGuardAnalyzer = {
     collectInitialFindings(
         identity,
         detection,
-        generic
+        generic,
+        archive
     ) {
 
         const findings = [];
 
 
         /*
-         * Detector anomalies become
-         * normalized security findings.
+         * Detector findings.
          */
 
         if (
@@ -391,8 +470,38 @@ const FileGuardAnalyzer = {
 
 
         /*
-         * Preserve the existing generic MIME
-         * mismatch logic as a fallback.
+         * Archive findings.
+         *
+         * These are already evidence-based
+         * findings produced by the archive analyzer.
+         */
+
+        if (
+            archive &&
+            Array.isArray(
+                archive.findings
+            )
+        ) {
+
+            for (
+                const finding
+                of archive.findings
+            ) {
+
+                findings.push({
+
+                    ...finding,
+
+                    source:
+                        "archive"
+
+                });
+            }
+        }
+
+
+        /*
+         * Generic MIME mismatch fallback.
          */
 
         if (
@@ -451,7 +560,10 @@ const FileGuardAnalyzer = {
                     },
 
                     recommendation:
-                        "Verify the file type before opening or processing it."
+                        "Verify the file type before opening or processing it.",
+
+                    source:
+                        "generic"
 
                 });
             }
@@ -625,7 +737,9 @@ const FileGuardAnalyzer = {
 
     validateFile(file) {
 
-        if (!(file instanceof File)) {
+        if (
+            !(file instanceof File)
+        ) {
 
             throw new TypeError(
                 "FileGuardAnalyzer requires a File object."
