@@ -4,24 +4,27 @@
  * FILEGUARD
  * Application Controller
  *
- * V1.5.0
+ * V2.0.0
  *
  * Responsibilities:
  * - Upload UI integration
  * - Analysis lifecycle
  * - Real analysis progress
  * - Result rendering
- * - Workspace navigation
+ * - Investigation workspace
+ * - APK security data presentation
+ * - Findings / correlations / evidence presentation
  * - Error handling
  *
- * The controller does not perform file analysis itself.
+ * The controller does not perform analysis.
  * Analysis is delegated to FileGuardAnalyzer.
  */
 
 
 const FileGuardApp = {
 
-    VERSION: "1.5.0",
+    VERSION: "2.0.0",
+
 
     elements: {
 
@@ -49,12 +52,19 @@ const FileGuardApp = {
 
         errorSection: null,
         errorMessage: null
+
     },
 
 
     currentFile: null,
     currentResult: null,
 
+
+    /*
+     * ─────────────────────────────
+     * INITIALIZATION
+     * ─────────────────────────────
+     */
 
     init() {
 
@@ -65,7 +75,7 @@ const FileGuardApp = {
         this.initializeUpload();
 
         console.log(
-            "FileGuard: application initialized.",
+            "FileGuard initialized.",
             this.VERSION
         );
     },
@@ -73,46 +83,35 @@ const FileGuardApp = {
 
     cacheElements() {
 
+        const get =
+            id =>
+                document.getElementById(id);
+
+
         this.elements.analysisSection =
-            document.getElementById(
-                "analysis-section"
-            );
+            get("analysis-section");
 
         this.elements.analysisStatus =
-            document.getElementById(
-                "analysis-status"
-            );
+            get("analysis-status");
 
         this.elements.analysisFile =
-            document.getElementById(
-                "analysis-file"
-            );
+            get("analysis-file");
 
         this.elements.analysisSteps =
-            document.getElementById(
-                "analysis-steps"
-            );
+            get("analysis-steps");
 
 
         this.elements.resultSection =
-            document.getElementById(
-                "result-section"
-            );
+            get("result-section");
 
         this.elements.resultStatus =
-            document.getElementById(
-                "result-status"
-            );
+            get("result-status");
 
         this.elements.resultSummary =
-            document.getElementById(
-                "result-summary"
-            );
+            get("result-summary");
 
         this.elements.resultFindings =
-            document.getElementById(
-                "result-findings"
-            );
+            get("result-findings");
 
 
         this.elements.workspaceTabs =
@@ -121,6 +120,7 @@ const FileGuardApp = {
                     ".workspace-tab"
                 )
             );
+
 
         this.elements.workspacePanels =
             Array.from(
@@ -131,55 +131,35 @@ const FileGuardApp = {
 
 
         this.elements.overviewPanel =
-            document.getElementById(
-                "overview-panel"
-            );
+            get("overview-panel");
 
         this.elements.identityPanel =
-            document.getElementById(
-                "identity-panel"
-            );
+            get("identity-panel");
 
         this.elements.structurePanel =
-            document.getElementById(
-                "structure-panel"
-            );
+            get("structure-panel");
 
         this.elements.securityPanel =
-            document.getElementById(
-                "security-panel"
-            );
+            get("security-panel");
 
         this.elements.networkPanel =
-            document.getElementById(
-                "network-panel"
-            );
+            get("network-panel");
 
         this.elements.metadataPanel =
-            document.getElementById(
-                "metadata-panel"
-            );
+            get("metadata-panel");
 
         this.elements.filesPanel =
-            document.getElementById(
-                "files-panel"
-            );
+            get("files-panel");
 
         this.elements.evidencePanel =
-            document.getElementById(
-                "evidence-panel"
-            );
+            get("evidence-panel");
 
 
         this.elements.errorSection =
-            document.getElementById(
-                "error-section"
-            );
+            get("error-section");
 
         this.elements.errorMessage =
-            document.getElementById(
-                "error-message"
-            );
+            get("error-message");
     },
 
 
@@ -193,8 +173,12 @@ const FileGuardApp = {
                     event.detail &&
                     event.detail.file;
 
+
                 if (file) {
-                    this.handleFile(file);
+
+                    this.handleFile(
+                        file
+                    );
                 }
             }
         );
@@ -220,7 +204,9 @@ const FileGuardApp = {
 
     initializeUpload() {
 
-        if (!window.FileGuardUploadUI) {
+        if (
+            !window.FileGuardUploadUI
+        ) {
 
             console.error(
                 "FileGuardUploadUI is not available."
@@ -229,32 +215,48 @@ const FileGuardApp = {
             return;
         }
 
+
         window.FileGuardUploadUI.init();
     },
 
 
+    /*
+     * ─────────────────────────────
+     * FILE LIFECYCLE
+     * ─────────────────────────────
+     */
+
     async handleFile(file) {
 
-        if (!(file instanceof File)) {
+        if (
+            !(file instanceof File)
+        ) {
+
             return;
         }
 
 
-        this.currentFile = file;
+        this.currentFile =
+            file;
 
-        this.currentResult = null;
+        this.currentResult =
+            null;
 
 
         this.hideError();
 
         this.showAnalysisWorkspace();
 
-        this.prepareAnalysisUI(file);
+        this.prepareAnalysisUI(
+            file
+        );
 
 
         try {
 
-            if (!window.FileGuardAnalyzer) {
+            if (
+                !window.FileGuardAnalyzer
+            ) {
 
                 throw new Error(
                     "FileGuardAnalyzer is not available."
@@ -274,9 +276,13 @@ const FileGuardApp = {
                 );
 
 
-            this.currentResult = result;
+            this.currentResult =
+                result;
 
-            this.showResult(result);
+
+            this.showResult(
+                result
+            );
 
         } catch (error) {
 
@@ -284,6 +290,7 @@ const FileGuardApp = {
                 "FileGuard analysis failed:",
                 error
             );
+
 
             this.showAnalysisError(
                 error
@@ -299,6 +306,7 @@ const FileGuardApp = {
             false
         );
 
+
         this.setHidden(
             this.elements.resultSection,
             true
@@ -306,16 +314,26 @@ const FileGuardApp = {
     },
 
 
+    /*
+     * ─────────────────────────────
+     * PROGRESS
+     * ─────────────────────────────
+     */
+
     prepareAnalysisUI(file) {
 
-        if (this.elements.analysisStatus) {
+        if (
+            this.elements.analysisStatus
+        ) {
 
             this.elements.analysisStatus.textContent =
                 "RUNNING";
         }
 
 
-        if (this.elements.analysisFile) {
+        if (
+            this.elements.analysisFile
+        ) {
 
             this.elements.analysisFile.textContent =
                 `${file.name} · ${this.formatBytes(
@@ -324,12 +342,16 @@ const FileGuardApp = {
         }
 
 
-        if (!this.elements.analysisSteps) {
+        if (
+            !this.elements.analysisSteps
+        ) {
+
             return;
         }
 
 
-        this.elements.analysisSteps.innerHTML = "";
+        this.elements.analysisSteps.innerHTML =
+            "";
 
 
         const steps = [
@@ -399,6 +421,7 @@ const FileGuardApp = {
                 number: "11",
                 name: "ANALYSIS COMPLETE"
             }
+
         ];
 
 
@@ -453,6 +476,7 @@ const FileGuardApp = {
             !progress ||
             !this.elements.analysisSteps
         ) {
+
             return;
         }
 
@@ -464,6 +488,7 @@ const FileGuardApp = {
 
 
         if (!step) {
+
             return;
         }
 
@@ -495,7 +520,9 @@ const FileGuardApp = {
             }
 
 
-            if (this.elements.analysisStatus) {
+            if (
+                this.elements.analysisStatus
+            ) {
 
                 this.elements.analysisStatus.textContent =
                     "ANALYZING";
@@ -543,6 +570,12 @@ const FileGuardApp = {
         }
     },
 
+
+    /*
+     * ─────────────────────────────
+     * RESULT
+     * ─────────────────────────────
+     */
 
     showResult(result) {
 
@@ -599,36 +632,47 @@ const FileGuardApp = {
         const file =
             result.file || {};
 
+
         const hashes =
             result.hashes || {};
+
 
         const detection =
             result.detection || {};
 
+
         const analysisPlan =
             result.analysisPlan || null;
 
+
         const archive =
             result.archive || null;
+
 
         const apk =
             result.apk || null;
 
 
         const findings =
-            Array.isArray(result.findings)
+            Array.isArray(
+                result.findings
+            )
                 ? result.findings
                 : [];
 
 
         const correlations =
-            Array.isArray(result.correlations)
+            Array.isArray(
+                result.correlations
+            )
                 ? result.correlations
                 : [];
 
 
         const evidence =
-            Array.isArray(result.evidence)
+            Array.isArray(
+                result.evidence
+            )
                 ? result.evidence
                 : [];
 
@@ -663,7 +707,7 @@ const FileGuardApp = {
                         format detection, routed analyzers,
                         findings, correlation and evidence
                         were processed locally.
-                        These results are analytical signals,
+                        These are analytical signals,
                         not a malware verdict.
                     </p>
 
@@ -674,9 +718,9 @@ const FileGuardApp = {
 
                     ${this.summaryItem(
                         "FILE",
-                        file.name || "Unknown"
+                        file.name ||
+                        "Unknown"
                     )}
-
 
                     ${this.summaryItem(
                         "SIZE",
@@ -685,20 +729,17 @@ const FileGuardApp = {
                         )
                     )}
 
-
                     ${this.summaryItem(
                         "DETECTED FORMAT",
                         detection.format ||
                         "Unknown"
                     )}
 
-
                     ${this.summaryItem(
                         "CATEGORY",
                         detection.category ||
                         "Unknown"
                     )}
-
 
                     ${this.summaryItem(
                         "CONFIDENCE",
@@ -710,7 +751,6 @@ const FileGuardApp = {
                             : "Unavailable"
                     )}
 
-
                     ${this.summaryItem(
                         "PRIMARY ANALYZER",
                         analysisPlan &&
@@ -718,7 +758,6 @@ const FileGuardApp = {
                             ? analysisPlan.primaryAnalyzer
                             : "None"
                     )}
-
 
                     ${this.summaryItem(
                         "ACTIVE ANALYZERS",
@@ -732,7 +771,6 @@ const FileGuardApp = {
                             : "None"
                     )}
 
-
                     ${this.summaryItem(
                         "CONTAINER",
                         archive
@@ -741,20 +779,12 @@ const FileGuardApp = {
                             : "None"
                     )}
 
-
                     ${this.summaryItem(
                         "APK ANALYSIS",
                         apk
                             ? "AVAILABLE"
-                            : analysisPlan &&
-                              analysisPlan.pendingAnalyzers &&
-                              analysisPlan.pendingAnalyzers.includes(
-                                  "apk"
-                              )
-                                ? "PENDING"
-                                : "NOT APPLICABLE"
+                            : "NOT APPLICABLE"
                     )}
-
 
                     ${this.summaryItem(
                         "FINDINGS",
@@ -763,14 +793,12 @@ const FileGuardApp = {
                         )
                     )}
 
-
                     ${this.summaryItem(
                         "CORRELATIONS",
                         String(
                             correlations.length
                         )
                     )}
-
 
                     ${this.summaryItem(
                         "EVIDENCE",
@@ -779,12 +807,10 @@ const FileGuardApp = {
                         )
                     )}
 
-
                     ${this.summaryItem(
                         "HIGHEST SEVERITY",
                         highestSeverity
                     )}
-
 
                     ${this.summaryItem(
                         "SHA-256",
@@ -809,6 +835,12 @@ const FileGuardApp = {
     },
 
 
+    /*
+     * ─────────────────────────────
+     * FINDINGS
+     * ─────────────────────────────
+     */
+
     renderFindingSummary(
         findings,
         correlations
@@ -817,6 +849,7 @@ const FileGuardApp = {
         if (
             !this.elements.resultFindings
         ) {
+
             return;
         }
 
@@ -839,9 +872,8 @@ const FileGuardApp = {
                     </div>
 
                     <p class="result-verdict-description">
-                        No security-relevant rule finding
-                        was generated by the analyzers
-                        currently enabled for this file.
+                        No rule-based finding was generated
+                        by the currently enabled analyzers.
                     </p>
 
                 </div>
@@ -883,23 +915,19 @@ const FileGuardApp = {
                 </div>
 
                 <div class="result-verdict-title">
-
                     ${findings.length}
                     ${
                         findings.length === 1
                             ? "FINDING"
                             : "FINDINGS"
                     }
-
                     /
-
                     ${correlations.length}
                     ${
                         correlations.length === 1
                             ? "CORRELATION"
                             : "CORRELATIONS"
                     }
-
                 </div>
 
             </div>
@@ -919,9 +947,13 @@ const FileGuardApp = {
             ${
                 correlationCards
                     ? `
-
                         <div class="result-verdict">
 
                             <div class="result-verdict-label">
                                 CORRELATION ENGINE
-         
+                            </div>
+
+                        </div>
+
+                        <div class="file-summary">
+                   
