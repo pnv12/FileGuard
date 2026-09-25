@@ -42,10 +42,6 @@
 
     <main>
 
-        <!--
-         * HERO
-         -->
-
         <section class="hero">
 
             <div class="hero-label">
@@ -65,10 +61,6 @@
 
         </section>
 
-
-        <!--
-         * UPLOAD
-         -->
 
         <section
             class="upload-section"
@@ -92,7 +84,6 @@
                     Analysis starts automatically
                 </div>
 
-
                 <label
                     id="select-file-button"
                     class="primary-button"
@@ -101,14 +92,12 @@
                     SELECT FILE
                 </label>
 
-
                 <input
                     id="file-input"
                     class="file-input"
                     type="file"
                     aria-label="Select file for analysis"
                 >
-
 
                 <div class="local-status">
 
@@ -124,10 +113,6 @@
 
         </section>
 
-
-        <!--
-         * ANALYSIS WORKSPACE
-         -->
 
         <section
             class="analysis-section"
@@ -157,19 +142,9 @@
                     class="analysis-step"
                     data-step="identity"
                 >
-
-                    <span class="step-index">
-                        01
-                    </span>
-
-                    <span class="step-name">
-                        IDENTITY
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">01</span>
+                    <span class="step-name">IDENTITY</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
 
@@ -177,19 +152,9 @@
                     class="analysis-step"
                     data-step="hashes"
                 >
-
-                    <span class="step-index">
-                        02
-                    </span>
-
-                    <span class="step-name">
-                        HASHES
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">02</span>
+                    <span class="step-name">HASHES</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
 
@@ -197,19 +162,9 @@
                     class="analysis-step"
                     data-step="detection"
                 >
-
-                    <span class="step-index">
-                        03
-                    </span>
-
-                    <span class="step-name">
-                        FILE DETECTION
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">03</span>
+                    <span class="step-name">FILE DETECTION</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
 
@@ -217,19 +172,9 @@
                     class="analysis-step"
                     data-step="archive"
                 >
-
-                    <span class="step-index">
-                        04
-                    </span>
-
-                    <span class="step-name">
-                        ARCHIVE / STRUCTURE
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">04</span>
+                    <span class="step-name">ARCHIVE / STRUCTURE</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
 
@@ -237,19 +182,9 @@
                     class="analysis-step"
                     data-step="generic"
                 >
-
-                    <span class="step-index">
-                        05
-                    </span>
-
-                    <span class="step-name">
-                        GENERIC ANALYSIS
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">05</span>
+                    <span class="step-name">GENERIC ANALYSIS</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
 
@@ -257,19 +192,9 @@
                     class="analysis-step"
                     data-step="findings"
                 >
-
-                    <span class="step-index">
-                        06
-                    </span>
-
-                    <span class="step-name">
-                        FINDINGS
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">06</span>
+                    <span class="step-name">FINDINGS</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
 
@@ -277,29 +202,15 @@
                     class="analysis-step"
                     data-step="complete"
                 >
-
-                    <span class="step-index">
-                        07
-                    </span>
-
-                    <span class="step-name">
-                        COMPLETE
-                    </span>
-
-                    <span class="step-status">
-                        WAITING
-                    </span>
-
+                    <span class="step-index">07</span>
+                    <span class="step-name">COMPLETE</span>
+                    <span class="step-status">WAITING</span>
                 </div>
 
             </div>
 
         </section>
 
-
-        <!--
-         * RESULT
-         -->
 
         <section
             class="result-section"
@@ -326,20 +237,14 @@
             <div
                 class="result-summary"
                 id="result-summary"
-            >
-            </div>
+            ></div>
 
 
             <div
                 class="result-findings"
                 id="result-findings"
-            >
-            </div>
+            ></div>
 
-
-            <!--
-             * INVESTIGATION WORKSPACE
-             -->
 
             <div class="workspace">
 
@@ -414,124 +319,67 @@
 
                 <div class="workspace-content">
 
-
-                    <!-- OVERVIEW -->
-
                     <div
                         class="workspace-panel active"
                         data-panel-content="overview"
                     >
-
-                        <div
-                            id="overview-panel"
-                        >
-                        </div>
-
+                        <div id="overview-panel"></div>
                     </div>
 
-
-                    <!-- IDENTITY -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="identity"
                     >
-
-                        <div
-                            id="identity-panel"
-                        >
-                        </div>
-
+                        <div id="identity-panel"></div>
                     </div>
 
-
-                    <!-- STRUCTURE -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="structure"
                     >
-
-                        <div
-                            id="structure-panel"
-                        >
-                        </div>
-
+                        <div id="structure-panel"></div>
                     </div>
 
-
-                    <!-- SECURITY -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="security"
                     >
-
-                        <div
-                            id="security-panel"
-                        >
-                        </div>
-
+                        <div id="security-panel"></div>
                     </div>
 
-
-                    <!-- NETWORK -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="network"
                     >
-
-                        <div
-                            id="network-panel"
-                        >
-                        </div>
-
+                        <div id="network-panel"></div>
                     </div>
 
-
-                    <!-- METADATA -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="metadata"
                     >
-
-                        <div
-                            id="metadata-panel"
-                        >
-                        </div>
-
+                        <div id="metadata-panel"></div>
                     </div>
 
-
-                    <!-- FILES -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="files"
                     >
-
-                        <div
-                            id="files-panel"
-                        >
-                        </div>
-
+                        <div id="files-panel"></div>
                     </div>
 
-
-                    <!-- EVIDENCE -->
 
                     <div
                         class="workspace-panel"
                         data-panel-content="evidence"
                     >
-
-                        <div
-                            id="evidence-panel"
-                        >
-                        </div>
-
+                        <div id="evidence-panel"></div>
                     </div>
 
                 </div>
@@ -540,10 +388,6 @@
 
         </section>
 
-
-        <!--
-         * ERROR
-         -->
 
         <section
             class="error-section"
@@ -558,8 +402,7 @@
             <div
                 class="error-message"
                 id="error-message"
-            >
-            </div>
+            ></div>
 
         </section>
 
@@ -583,12 +426,6 @@
     </footer>
 
 
-    <!--
-     * FILEGUARD ENGINE
-     *
-     * Load order is important.
-     -->
-
     <script src="utils/hash.js"></script>
 
     <script src="analyzers/generic.js"></script>
@@ -598,7 +435,9 @@
     <script src="core/detector.js"></script>
 
     <script src="core/evidence.js"></script>
-    
+
+    <script src="core/findings.js"></script>
+
     <script src="core/analyzer.js"></script>
 
     <script src="ui/upload.js"></script>
