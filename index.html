@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#090b0d"
     >
 
     <meta
@@ -12,148 +19,435 @@
         content="FileGuard — local-first file analysis laboratory."
     >
 
-    <title>FileGuard</title>
+    <title>FileGuard — File Analysis Laboratory</title>
 
-    <link rel="stylesheet" href="styles.css">
+    <link
+        rel="stylesheet"
+        href="styles.css"
+    >
+
 </head>
+
 
 <body>
 
-    <div id="app">
+<div id="app">
 
-        <header class="topbar">
-            <div class="brand">
-                <span class="brand-name">FILEGUARD</span>
-                <span class="brand-version">01.0.0</span>
+
+    <!-- ═══════════════════════════════════════
+         HEADER
+    ═══════════════════════════════════════ -->
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <div class="brand-name">
+                FILEGUARD
             </div>
 
-            <div class="engine-status">
-                <span class="status-indicator"></span>
-                <span>LOCAL ENGINE — READY</span>
+            <div class="brand-version">
+                01.0.0
             </div>
-        </header>
+
+        </div>
 
 
-        <main class="main">
+        <div
+            class="engine-status"
+            aria-label="Local analysis engine status"
+        >
 
-            <section class="hero">
+            <span
+                class="status-indicator"
+                aria-hidden="true"
+            ></span>
 
-                <div class="hero-label">
-                    ANALYSIS
-                </div>
+            <span>
+                LOCAL ENGINE
+            </span>
 
-                <h1>
-                    Automated file
-                    <br>
-                    analysis laboratory.
-                </h1>
+            <span class="engine-status-value">
+                READY
+            </span>
 
-                <p class="hero-description">
-                    Identify structure, integrity, metadata
-                    and security-relevant characteristics
-                    of a file from a single analysis.
-                </p>
+        </div>
 
-            </section>
+    </header>
 
 
-            <section class="upload-section">
 
-                <div
-                    id="drop-zone"
-                    class="drop-zone"
+    <!-- ═══════════════════════════════════════
+         MAIN
+    ═══════════════════════════════════════ -->
+
+    <main class="main">
+
+
+        <!-- HERO -->
+
+        <section
+            class="hero"
+            aria-labelledby="hero-title"
+        >
+
+            <div class="hero-label">
+                FILE ANALYSIS / 01
+            </div>
+
+
+            <h1 id="hero-title">
+
+                Automated file
+                <br>
+                analysis laboratory.
+
+            </h1>
+
+
+            <p class="hero-description">
+
+                Identify what a file is, inspect its structure,
+                calculate integrity hashes and surface
+                security-relevant characteristics.
+
+            </p>
+
+        </section>
+
+
+
+        <!-- ═══════════════════════════════════════
+             FILE INPUT
+        ═══════════════════════════════════════ -->
+
+        <section
+            class="upload-section"
+            aria-labelledby="upload-title"
+        >
+
+            <div
+                id="drop-zone"
+                class="drop-zone"
+            >
+
+
+                <div class="drop-corner corner-top-left"></div>
+
+                <div class="drop-corner corner-top-right"></div>
+
+                <div class="drop-corner corner-bottom-left"></div>
+
+                <div class="drop-corner corner-bottom-right"></div>
+
+
+                <input
+                    id="file-input"
+                    type="file"
+                    hidden
+                    aria-hidden="true"
                 >
 
-                    <input
-                        id="file-input"
-                        type="file"
-                        hidden
+
+                <div class="drop-content">
+
+
+                    <div class="drop-meta">
+
+                        <span class="drop-index">
+                            INPUT
+                        </span>
+
+                        <span class="drop-type">
+                            LOCAL FILE
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        id="upload-title"
+                        class="drop-title"
+                    >
+                        SELECT FILE
+                    </div>
+
+
+                    <p class="drop-description">
+
+                        Select a file or drag it into this area.
+                        Analysis starts locally in your browser.
+
+                    </p>
+
+
+                    <button
+                        id="select-file-button"
+                        class="primary-button"
+                        type="button"
                     >
 
-                    <div class="drop-content">
-
-                        <div class="drop-index">
-                            01
-                        </div>
-
-                        <div class="drop-title">
+                        <span>
                             SELECT FILE
-                        </div>
+                        </span>
 
-                        <div class="drop-description">
-                            Choose a file to start analysis automatically.
-                        </div>
-
-                        <button
-                            id="select-file-button"
-                            class="primary-button"
-                            type="button"
+                        <span
+                            class="button-arrow"
+                            aria-hidden="true"
                         >
-                            SELECT FILE
-                        </button>
+                            →
+                        </span>
+
+                    </button>
+
+
+                    <div class="drop-note">
+
+                        NO FILE UPLOAD REQUIRED FOR BASIC ANALYSIS
 
                     </div>
 
                 </div>
 
-            </section>
+            </div>
+
+        </section>
 
 
-            <section
-                id="analysis-section"
-                class="analysis-section hidden"
-            >
 
-                <div class="section-header">
-                    <span>ANALYSIS</span>
-                    <span id="analysis-status">PREPARING</span>
+        <!-- ═══════════════════════════════════════
+             ANALYSIS WORKSPACE
+        ═══════════════════════════════════════ -->
+
+        <section
+            id="analysis-section"
+            class="analysis-section hidden"
+            aria-labelledby="analysis-title"
+        >
+
+
+            <div class="section-header">
+
+                <div
+                    id="analysis-title"
+                    class="section-title"
+                >
+                    ANALYSIS
                 </div>
 
                 <div
-                    id="analysis-steps"
-                    class="analysis-steps"
-                ></div>
-
-            </section>
-
-
-            <section
-                id="result-section"
-                class="result-section hidden"
-            >
-
-                <div class="section-header">
-                    <span>RESULT</span>
-                    <span id="result-status">COMPLETE</span>
+                    id="analysis-status"
+                    class="section-status"
+                >
+                    PREPARING
                 </div>
 
-                <div id="result-content"></div>
-
-            </section>
-
-        </main>
+            </div>
 
 
-        <footer class="footer">
+            <div
+                id="analysis-file"
+                class="analysis-file"
+            ></div>
 
-            <div>
+
+            <div
+                id="analysis-steps"
+                class="analysis-steps"
+            ></div>
+
+
+        </section>
+
+
+
+        <!-- ═══════════════════════════════════════
+             RESULT WORKSPACE
+        ═══════════════════════════════════════ -->
+
+        <section
+            id="result-section"
+            class="result-section hidden"
+            aria-labelledby="result-title"
+        >
+
+
+            <div class="section-header">
+
+                <div
+                    id="result-title"
+                    class="section-title"
+                >
+                    INVESTIGATION
+                </div>
+
+                <div
+                    id="result-status"
+                    class="section-status"
+                >
+                    COMPLETE
+                </div>
+
+            </div>
+
+
+            <div
+                id="result-content"
+                class="result-content"
+            ></div>
+
+
+        </section>
+
+
+
+        <!-- ═══════════════════════════════════════
+             FUTURE WORKSPACE
+        ═══════════════════════════════════════ -->
+
+        <section
+            id="workspace-section"
+            class="workspace-section hidden"
+        >
+
+            <nav
+                class="workspace-navigation"
+                aria-label="Analysis sections"
+            >
+
+                <button
+                    type="button"
+                    class="workspace-tab active"
+                    data-panel="overview"
+                >
+                    OVERVIEW
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="identity"
+                >
+                    IDENTITY
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="structure"
+                >
+                    STRUCTURE
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="security"
+                >
+                    SECURITY
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="network"
+                >
+                    NETWORK
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="metadata"
+                >
+                    METADATA
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="files"
+                >
+                    FILES
+                </button>
+
+                <button
+                    type="button"
+                    class="workspace-tab"
+                    data-panel="evidence"
+                >
+                    EVIDENCE
+                </button>
+
+            </nav>
+
+
+            <div
+                id="workspace-content"
+                class="workspace-content"
+            ></div>
+
+        </section>
+
+
+
+    </main>
+
+
+
+    <!-- ═══════════════════════════════════════
+         FOOTER
+    ═══════════════════════════════════════ -->
+
+    <footer class="footer">
+
+        <div class="footer-left">
+
+            <span>
                 FILEGUARD
-            </div>
+            </span>
 
-            <div>
+            <span>
                 LOCAL-FIRST ANALYSIS
-            </div>
+            </span>
 
-            <div>
+        </div>
+
+
+        <div class="footer-right">
+
+            <span>
                 V1.0
-            </div>
+            </span>
 
-        </footer>
+            <span>
+                BROWSER ENGINE
+            </span>
 
-    </div>
+        </div>
+
+    </footer>
 
 
-    <script src="app.js"></script>
+</div>
+
+
+
+<!-- ═══════════════════════════════════════
+     APPLICATION MODULES
+═══════════════════════════════════════ -->
+
+
+<script src="utils/hash.js"></script>
+
+<script src="core/analyzer.js"></script>
+
+<script src="analyzers/generic.js"></script>
+
+<script src="ui/upload.js"></script>
+
+<script src="app.js"></script>
+
 
 </body>
 </html>
