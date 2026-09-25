@@ -4,89 +4,112 @@
  * FILEGUARD
  * Analysis Plan / Router
  *
- * V1.0.0
+ * V1.1.0
  *
- * Converts file identity + detection results
- * into a deterministic list of analyzers that
- * should run.
+ * Determines which analyzers should run for a file.
  *
- * The router decides WHAT should be analyzed.
- * Individual analyzers decide HOW to analyze it.
- *
- * No security verdicts are produced here.
+ * Routing philosophy:
+ * - Generic analysis is always available.
+ * - Archive analysis is enabled for containers.
+ * - APK analysis is enabled for Android packages.
+ * - Future specialized analyzers remain disabled until implemented.
  */
 
 
 const FileGuardAnalysisPlan = {
 
-    VERSION: "1.0.0",
+    VERSION: "1.1.0",
 
 
-    /*
-     * ─────────────────────────────
-     * MAIN API
-     * ─────────────────────────────
-     */
-
-    create(identity, detection) {
+    create(
+        identity = {},
+        detection = {}
+    ) {
 
         const safeIdentity =
-            identity || {};
+            identity &&
+            typeof identity === "object"
+                ? identity
+                : {};
+
 
         const safeDetection =
-            detection || {};
+            detection &&
+            typeof detection === "object"
+                ? detection
+                : {};
 
 
         const candidates = [];
 
 
         /*
-         * GENERIC ANALYSIS
+         * GENERIC
          *
-         * Every file receives the generic analyzer.
+         * Every file receives basic identity analysis.
          */
 
         candidates.push({
-            id: "generic",
-            reason: "Universal file identity and baseline analysis.",
-            required: true,
-            enabled: true
+
+            id:
+                "generic",
+
+            reason:
+                "General file identity and baseline analysis.",
+
+            required:
+                true,
+
+            enabled:
+                true,
+
+            pending:
+                false
+
         });
 
 
         /*
-         * ARCHIVE / CONTAINER ANALYSIS
-         *
-         * ZIP-based formats are routed here.
-         *
-         * The archive analyzer itself determines whether
-         * the container is ZIP, APK, JAR, Office Open XML,
-         * or another ZIP-based structure.
+         * ARCHIVE / CONTAINER
          */
 
-        if (
+        const archiveCandidate =
             this.isArchiveCandidate(
                 safeIdentity,
                 safeDetection
-            )
-        ) {
+            );
+
+
+        if (archiveCandidate) {
 
             candidates.push({
-                id: "archive",
-                reason: "The file appears to be a ZIP-based container.",
-                required: true,
-                enabled: true
+
+                id:
+                    "archive",
+
+                reason:
+                    "The file appears to be a ZIP-based or archive container.",
+
+                required:
+                    true,
+
+                enabled:
+                    true,
+
+                pending:
+                    false
+
             });
         }
 
 
         /*
-         * APK ANALYSIS
+         * APK
          *
-         * The deep APK analyzer does not exist yet.
+         * APK is a specialized ZIP-based Android package.
          *
-         * We still expose the routing decision now so the
-         * architecture is ready for it.
+         * The archive analyzer runs first and supplies the
+         * entry index to the APK analyzer.
          */
 
         const apkCandidate =
@@ -99,11 +122,22 @@ const FileGuardAnalysisPlan = {
         if (apkCandidate) {
 
             candidates.push({
-                id: "apk",
-                reason: "The file appears to be an Android application package.",
-                required: true,
-                enabled: false,
-                pending: true
+
+                id:
+                    "apk",
+
+                reason:
+                    "The file appears to be an Android application package.",
+
+                required:
+                    true,
+
+                enabled:
+                    true,
+
+                pending:
+                    false
+
             });
         }
 
@@ -111,42 +145,67 @@ const FileGuardAnalysisPlan = {
         /*
          * FUTURE ANALYZERS
          *
-         * These are deliberately not enabled yet.
-         *
-         * The router is designed so they can be added
-         * without changing the central analyzer pipeline.
+         * These remain disabled until their dedicated
+         * implementations are added.
          */
 
         const futureCandidates = [
+
             {
-                id: "pdf",
-                enabled: false,
-                reason: "PDF-specific structural and metadata analysis."
+                id:
+                    "pdf",
+
+                enabled:
+                    false,
+
+                reason:
+                    "PDF-specific structural and metadata analysis."
             },
 
             {
-                id: "office",
-                enabled: false,
-                reason: "Office document structural and macro-related analysis."
+                id:
+                    "office",
+
+                enabled:
+                    false,
+
+                reason:
+                    "Office document structural and macro-related analysis."
             },
 
             {
-                id: "image",
-                enabled: false,
-                reason: "Image metadata and embedded-content analysis."
+                id:
+                    "image",
+
+                enabled:
+                    false,
+
+                reason:
+                    "Image metadata and embedded-content analysis."
             },
 
             {
-                id: "executable",
-                enabled: false,
-                reason: "PE/ELF executable analysis."
+                id:
+                    "executable",
+
+                enabled:
+                    false,
+
+                reason:
+                    "PE/ELF executable analysis."
             },
 
             {
-                id: "media",
-                enabled: false,
-                reason: "Audio/video container and metadata analysis."
+                id:
+                    "media",
+
+                enabled:
+                    false,
+
+                reason:
+                    "Audio/video container and metadata analysis."
             }
+
         ];
 
 
@@ -198,16 +257,14 @@ const FileGuardAnalysisPlan = {
             flags: {
 
                 containerCandidate:
-                    this.isArchiveCandidate(
-                        safeIdentity,
-                        safeDetection
-                    ),
+                    archiveCandidate,
 
                 apkCandidate,
 
                 unknownFormat:
                     safeDetection.formatId ===
                     "unknown"
+
             }
 
         };
@@ -227,8 +284,10 @@ const FileGuardAnalysisPlan = {
 
         if (
             detection &&
-            detection.formatId === "zip"
+            detection.formatId ===
+                "zip"
         ) {
+
             return true;
         }
 
@@ -267,6 +326,7 @@ const FileGuardAnalysisPlan = {
                 extension
             )
         ) {
+
             return true;
         }
 
@@ -324,16 +384,20 @@ const FileGuardAnalysisPlan = {
 
 
         if (
-            extension === "apk"
+            extension ===
+            "apk"
         ) {
+
             return true;
         }
 
 
         if (
             detection &&
-            detection.formatId === "apk"
+            detection.formatId ===
+            "apk"
         ) {
+
             return true;
         }
 
@@ -345,6 +409,7 @@ const FileGuardAnalysisPlan = {
             ).toLowerCase() ===
             "application/vnd.android.package-archive"
         ) {
+
             return true;
         }
 
@@ -371,9 +436,24 @@ const FileGuardAnalysisPlan = {
 
 
         /*
-         * Archive takes precedence over generic
-         * whenever a container is detected.
+         * APK is more specific than generic/archive,
+         * therefore it becomes the primary analyzer
+         * whenever an APK candidate exists.
          */
+
+        const apk =
+            enabled.find(
+                analyzer =>
+                    analyzer.id ===
+                    "apk"
+            );
+
+
+        if (apk) {
+
+            return "apk";
+        }
+
 
         const archive =
             enabled.find(
@@ -384,6 +464,7 @@ const FileGuardAnalysisPlan = {
 
 
         if (archive) {
+
             return "archive";
         }
 
@@ -397,6 +478,7 @@ const FileGuardAnalysisPlan = {
 
 
         if (generic) {
+
             return "generic";
         }
 
