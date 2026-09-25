@@ -1,7 +1,7 @@
 "use strict";
 
 const FileGuardCorrelation = {
-    VERSION: "1.0.0",
+    VERSION: "1.0.1",
 
     correlate(findings, context = {}) {
         if (!Array.isArray(findings)) {
@@ -50,17 +50,15 @@ const FileGuardCorrelation = {
         output
     ) {
         const structural =
-            findings.filter(f =>
-                f.category === "detection" ||
-                f.category === "structure"
+            findings.filter(
+                finding =>
+                    finding.category === "detection" ||
+                    finding.category === "structure"
             );
 
         if (structural.length < 2) {
             return;
         }
-
-        const ids =
-            structural.map(f => f.id);
 
         output.push(
             this.createCorrelation(
@@ -90,7 +88,8 @@ const FileGuardCorrelation = {
 
         const archiveFindings =
             findings.filter(
-                f => f.source === "archive"
+                finding =>
+                    finding.source === "archive"
             );
 
         if (archiveFindings.length < 2) {
@@ -128,9 +127,9 @@ const FileGuardCorrelation = {
 
         const related =
             findings.filter(
-                f =>
-                    f.source === "detector" ||
-                    f.source === "generic"
+                finding =>
+                    finding.source === "detector" ||
+                    finding.source === "generic"
             );
 
         if (related.length === 0) {
@@ -168,47 +167,84 @@ const FileGuardCorrelation = {
 
         const suspiciousFeatures = [];
 
-        if (features.pathTraversal) {
+
+        /*
+         * These names match the actual Archive Analyzer
+         * feature contract.
+         */
+
+        if (
+            features.pathTraversal
+        ) {
             suspiciousFeatures.push(
                 "pathTraversal"
             );
         }
 
-        if (features.absolutePaths) {
+
+        if (
+            features.absolutePaths
+        ) {
             suspiciousFeatures.push(
                 "absolutePaths"
             );
         }
 
-        if (features.encryptedEntries) {
-            suspiciousFeatures.push(
-                "encryptedEntries"
-            );
-        }
-
-        if (features.highCompressionRatio) {
-            suspiciousFeatures.push(
-                "highCompressionRatio"
-            );
-        }
 
         if (
-            features.nestedArchives ||
-            features.nestedContainers
+            features.encrypted
+        ) {
+            suspiciousFeatures.push(
+                "encrypted"
+            );
+        }
+
+
+        if (
+            features.suspiciousCompression
+        ) {
+            suspiciousFeatures.push(
+                "suspiciousCompression"
+            );
+        }
+
+
+        if (
+            features.nestedArchives
         ) {
             suspiciousFeatures.push(
                 "nestedArchives"
             );
         }
 
-        if (suspiciousFeatures.length < 2) {
+
+        if (
+            features.duplicateNames
+        ) {
+            suspiciousFeatures.push(
+                "duplicateNames"
+            );
+        }
+
+
+        if (
+            suspiciousFeatures.length < 2
+        ) {
             return;
         }
 
+
         const related =
             findings.filter(
-                f => f.source === "archive"
+                finding =>
+                    finding.source === "archive"
             );
+
+
+        if (related.length === 0) {
+            return;
+        }
+
 
         output.push(
             this.createCorrelation(
@@ -239,36 +275,60 @@ const FileGuardCorrelation = {
         options = {},
         extraEvidence = null
     ) {
+        const safeFindings =
+            Array.isArray(
+                relatedFindings
+            )
+                ? relatedFindings
+                : [];
+
+
         return {
             id:
                 `correlation-${id}`,
 
             severity:
-                options.severity || "LOW",
+                options.severity ||
+                "LOW",
 
             confidence:
-                options.confidence || "MEDIUM",
+                options.confidence ||
+                "MEDIUM",
 
             title,
 
             description,
 
             evidence: {
-                type: "correlation",
+                type:
+                    "correlation",
+
                 relatedFindingIds:
-                    relatedFindings.map(
-                        finding => finding.id
+                    safeFindings.map(
+                        finding =>
+                            finding.id
                     ),
+
                 relatedFindings:
-                    relatedFindings.map(
+                    safeFindings.map(
                         finding => ({
-                            id: finding.id,
-                            title: finding.title,
-                            severity: finding.severity,
-                            confidence: finding.confidence,
-                            source: finding.source
+                            id:
+                                finding.id,
+
+                            title:
+                                finding.title,
+
+                            severity:
+                                finding.severity,
+
+                            confidence:
+                                finding.confidence,
+
+                            source:
+                                finding.source
                         })
                     ),
+
                 extra:
                     extraEvidence
             },
@@ -277,25 +337,39 @@ const FileGuardCorrelation = {
                 options.recommendation ||
                 "Review the related findings and their evidence.",
 
-            source: "correlation",
+            source:
+                "correlation",
 
-            category: "correlation",
+            category:
+                "correlation",
 
-            status: "open"
+            status:
+                "open"
         };
     },
 
 
     deduplicate(correlations) {
-        const map = new Map();
+        const map =
+            new Map();
 
-        for (const correlation of correlations) {
-            if (!correlation || !correlation.id) {
+
+        for (
+            const correlation
+            of correlations
+        ) {
+            if (
+                !correlation ||
+                !correlation.id
+            ) {
                 continue;
             }
 
+
             if (
-                !map.has(correlation.id)
+                !map.has(
+                    correlation.id
+                )
             ) {
                 map.set(
                     correlation.id,
@@ -304,6 +378,7 @@ const FileGuardCorrelation = {
             }
         }
 
+
         return Array.from(
             map.values()
         );
@@ -311,7 +386,11 @@ const FileGuardCorrelation = {
 
 
     summarize(correlations) {
-        if (!Array.isArray(correlations)) {
+        if (
+            !Array.isArray(
+                correlations
+            )
+        ) {
             return {
                 total: 0,
                 high: 0,
@@ -321,19 +400,31 @@ const FileGuardCorrelation = {
             };
         }
 
+
         const summary = {
-            total: correlations.length,
+            total:
+                correlations.length,
+
             high: 0,
+
             medium: 0,
+
             low: 0,
+
             info: 0
         };
 
-        for (const item of correlations) {
+
+        for (
+            const correlation
+            of correlations
+        ) {
             const severity =
                 String(
-                    item.severity || "INFO"
+                    correlation.severity ||
+                    "INFO"
                 ).toLowerCase();
+
 
             if (
                 Object.prototype.hasOwnProperty.call(
@@ -345,9 +436,11 @@ const FileGuardCorrelation = {
             }
         }
 
+
         return summary;
     }
 };
+
 
 window.FileGuardCorrelation =
     FileGuardCorrelation;
