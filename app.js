@@ -4,19 +4,25 @@
  * FILEGUARD
  * Application Controller
  *
- * V1.1
+ * V1.3
  *
  * Connects:
  * - Upload UI
  * - Core Analyzer
- * - Analysis workspace
- * - Result workspace
+ * - File Detection
+ * - Archive Analyzer
+ * - Result Workspace
+ * - Investigation Panels
  */
 
 
 const FileGuardApp = {
 
+    VERSION: "1.3.0",
+
+
     elements: {
+
         analysisSection: null,
         analysisStatus: null,
         analysisFile: null,
@@ -24,11 +30,24 @@ const FileGuardApp = {
 
         resultSection: null,
         resultStatus: null,
-        resultContent: null,
+        resultSummary: null,
+        resultFindings: null,
 
-        workspaceSection: null,
-        workspaceContent: null,
-        workspaceTabs: []
+        workspaceTabs: [],
+        workspacePanels: [],
+
+        overviewPanel: null,
+        identityPanel: null,
+        structurePanel: null,
+        securityPanel: null,
+        networkPanel: null,
+        metadataPanel: null,
+        filesPanel: null,
+        evidencePanel: null,
+
+        errorSection: null,
+        errorMessage: null
+
     },
 
 
@@ -37,9 +56,7 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
      * INITIALIZATION
-     * ─────────────────────────────
      */
 
     init() {
@@ -50,17 +67,15 @@ const FileGuardApp = {
 
         this.initializeUpload();
 
-
         console.log(
-            "FileGuard: application initialized."
+            "FileGuard: application initialized.",
+            this.VERSION
         );
     },
 
 
     /*
-     * ─────────────────────────────
-     * CACHE DOM
-     * ─────────────────────────────
+     * DOM CACHE
      */
 
     cacheElements() {
@@ -96,20 +111,14 @@ const FileGuardApp = {
                 "result-status"
             );
 
-        this.elements.resultContent =
+        this.elements.resultSummary =
             document.getElementById(
-                "result-content"
+                "result-summary"
             );
 
-
-        this.elements.workspaceSection =
+        this.elements.resultFindings =
             document.getElementById(
-                "workspace-section"
-            );
-
-        this.elements.workspaceContent =
-            document.getElementById(
-                "workspace-content"
+                "result-findings"
             );
 
 
@@ -119,13 +128,71 @@ const FileGuardApp = {
                     ".workspace-tab"
                 )
             );
+
+
+        this.elements.workspacePanels =
+            Array.from(
+                document.querySelectorAll(
+                    ".workspace-panel"
+                )
+            );
+
+
+        this.elements.overviewPanel =
+            document.getElementById(
+                "overview-panel"
+            );
+
+        this.elements.identityPanel =
+            document.getElementById(
+                "identity-panel"
+            );
+
+        this.elements.structurePanel =
+            document.getElementById(
+                "structure-panel"
+            );
+
+        this.elements.securityPanel =
+            document.getElementById(
+                "security-panel"
+            );
+
+        this.elements.networkPanel =
+            document.getElementById(
+                "network-panel"
+            );
+
+        this.elements.metadataPanel =
+            document.getElementById(
+                "metadata-panel"
+            );
+
+        this.elements.filesPanel =
+            document.getElementById(
+                "files-panel"
+            );
+
+        this.elements.evidencePanel =
+            document.getElementById(
+                "evidence-panel"
+            );
+
+
+        this.elements.errorSection =
+            document.getElementById(
+                "error-section"
+            );
+
+        this.elements.errorMessage =
+            document.getElementById(
+                "error-message"
+            );
     },
 
 
     /*
-     * ─────────────────────────────
      * EVENTS
-     * ─────────────────────────────
      */
 
     bindEvents() {
@@ -140,7 +207,10 @@ const FileGuardApp = {
 
 
                 if (file) {
-                    this.handleFile(file);
+
+                    this.handleFile(
+                        file
+                    );
                 }
             }
         );
@@ -155,12 +225,8 @@ const FileGuardApp = {
                 "click",
                 () => {
 
-                    const panel =
-                        tab.dataset.panel;
-
-
                     this.activateWorkspaceTab(
-                        panel
+                        tab.dataset.panel
                     );
                 }
             );
@@ -169,9 +235,7 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
-     * UPLOAD UI
-     * ─────────────────────────────
+     * UPLOAD
      */
 
     initializeUpload() {
@@ -193,28 +257,46 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
-     * FILE HANDLING
-     * ─────────────────────────────
+     * FILE ANALYSIS
      */
 
     async handleFile(file) {
 
-        if (!(file instanceof File)) {
+        if (
+            !(file instanceof File)
+        ) {
+
             return;
         }
 
 
-        this.currentFile = file;
-        this.currentResult = null;
+        this.currentFile =
+            file;
 
+        this.currentResult =
+            null;
+
+
+        this.hideError();
 
         this.showAnalysisWorkspace();
 
-        this.prepareAnalysisUI(file);
+        this.prepareAnalysisUI(
+            file
+        );
 
 
         try {
+
+            if (
+                !window.FileGuardAnalyzer
+            ) {
+
+                throw new Error(
+                    "FileGuardAnalyzer is not available."
+                );
+            }
+
 
             const result =
                 await window.FileGuardAnalyzer.analyze(
@@ -224,14 +306,18 @@ const FileGuardApp = {
                         this.handleProgress(
                             progress
                         );
+
                     }
                 );
 
 
-            this.currentResult = result;
+            this.currentResult =
+                result;
 
 
-            this.showResult(result);
+            this.showResult(
+                result
+            );
 
         } catch (error) {
 
@@ -249,35 +335,53 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
-     * ANALYSIS UI
-     * ─────────────────────────────
+     * ANALYSIS WORKSPACE
      */
 
     showAnalysisWorkspace() {
 
-        this.elements.analysisSection
-            .classList.remove("hidden");
+        this.setHidden(
+            this.elements.analysisSection,
+            false
+        );
 
-        this.elements.resultSection
-            .classList.add("hidden");
-
-        this.elements.workspaceSection
-            .classList.add("hidden");
+        this.setHidden(
+            this.elements.resultSection,
+            true
+        );
     },
 
 
     prepareAnalysisUI(file) {
 
-        this.elements.analysisStatus.textContent =
-            "RUNNING";
+        if (
+            this.elements.analysisStatus
+        ) {
+
+            this.elements.analysisStatus.textContent =
+                "RUNNING";
+        }
 
 
-        this.elements.analysisFile.textContent =
-            `${file.name} · ${this.formatBytes(file.size)}`;
+        if (
+            this.elements.analysisFile
+        ) {
+
+            this.elements.analysisFile.textContent =
+                `${file.name} · ${this.formatBytes(file.size)}`;
+        }
 
 
-        this.elements.analysisSteps.innerHTML = "";
+        if (
+            !this.elements.analysisSteps
+        ) {
+
+            return;
+        }
+
+
+        this.elements.analysisSteps.innerHTML =
+            "";
 
 
         const steps = [
@@ -295,30 +399,47 @@ const FileGuardApp = {
             },
 
             {
-                id: "generic",
+                id: "detection",
                 number: "03",
+                name: "FILE DETECTION"
+            },
+
+            {
+                id: "archive",
+                number: "04",
+                name: "ARCHIVE / STRUCTURE"
+            },
+
+            {
+                id: "generic",
+                number: "05",
                 name: "GENERAL ANALYSIS"
             },
 
             {
                 id: "findings",
-                number: "04",
+                number: "06",
                 name: "FINDINGS"
             },
 
             {
                 id: "complete",
-                number: "05",
+                number: "07",
                 name: "ANALYSIS COMPLETE"
             }
 
         ];
 
 
-        for (const step of steps) {
+        for (
+            const step
+            of steps
+        ) {
 
             const element =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
 
             element.className =
@@ -347,20 +468,24 @@ const FileGuardApp = {
 
 
             this.elements.analysisSteps
-                .appendChild(element);
+                .appendChild(
+                    element
+                );
         }
     },
 
 
     /*
-     * ─────────────────────────────
-     * REAL ANALYSIS PROGRESS
-     * ─────────────────────────────
+     * REAL PROGRESS
      */
 
     handleProgress(progress) {
 
-        if (!progress) {
+        if (
+            !progress ||
+            !this.elements.analysisSteps
+        ) {
+
             return;
         }
 
@@ -373,6 +498,7 @@ const FileGuardApp = {
 
 
         if (!step) {
+
             return;
         }
 
@@ -384,7 +510,8 @@ const FileGuardApp = {
 
 
         if (
-            progress.status === "running"
+            progress.status ===
+            "running"
         ) {
 
             step.classList.add(
@@ -395,13 +522,22 @@ const FileGuardApp = {
                 "completed"
             );
 
-            status.textContent =
-                "RUNNING";
+
+            if (status) {
+
+                status.textContent =
+                    "RUNNING";
+            }
 
 
-            this.elements.analysisStatus
-                .textContent =
-                "ANALYZING";
+            if (
+                this.elements.analysisStatus
+            ) {
+
+                this.elements.analysisStatus
+                    .textContent =
+                    "ANALYZING";
+            }
 
 
             return;
@@ -409,7 +545,8 @@ const FileGuardApp = {
 
 
         if (
-            progress.status === "completed"
+            progress.status ===
+            "completed"
         ) {
 
             step.classList.remove(
@@ -420,51 +557,60 @@ const FileGuardApp = {
                 "completed"
             );
 
-            status.textContent =
-                "DONE";
 
+            if (status) {
 
-            return;
+                status.textContent =
+                    "DONE";
+            }
         }
     },
 
 
     /*
-     * ─────────────────────────────
      * RESULT
-     * ─────────────────────────────
      */
 
     showResult(result) {
 
-        this.elements.analysisStatus
-            .textContent =
-            "COMPLETE";
+        if (
+            this.elements.analysisStatus
+        ) {
+
+            this.elements.analysisStatus
+                .textContent =
+                "COMPLETE";
+        }
 
 
-        this.elements.resultStatus
-            .textContent =
-            "COMPLETE";
+        if (
+            this.elements.resultStatus
+        ) {
+
+            this.elements.resultStatus
+                .textContent =
+                "COMPLETE";
+        }
 
 
-        this.elements.resultSection
-            .classList.remove("hidden");
+        this.setHidden(
+            this.elements.resultSection,
+            false
+        );
 
 
-        this.renderResult(result);
+        this.renderResult(
+            result
+        );
 
 
-        this.elements.workspaceSection
-            .classList.remove("hidden");
-
-
-        this.renderWorkspace(
+        this.activateWorkspaceTab(
             "overview"
         );
 
 
         this.elements.resultSection
-            .scrollIntoView({
+            ?.scrollIntoView({
                 behavior: "smooth",
                 block: "start"
             });
@@ -472,176 +618,253 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
-     * RESULT CONTENT
-     * ─────────────────────────────
+     * RESULT SUMMARY
      */
 
     renderResult(result) {
 
         const file =
-            result.file || {};
+            result.file ||
+            {};
 
         const identity =
-            result.identity || {};
+            result.identity ||
+            {};
 
         const hashes =
-            result.hashes || {};
+            result.hashes ||
+            {};
+
+        const detection =
+            result.detection ||
+            {};
+
+        const archive =
+            result.archive ||
+            null;
 
         const findings =
-            Array.isArray(result.findings)
+            Array.isArray(
+                result.findings
+            )
                 ? result.findings
                 : [];
 
 
-        const findingText =
+        const highestSeverity =
+            this.getHighestSeverity(
+                findings
+            );
+
+
+        if (
+            this.elements.resultSummary
+        ) {
+
+            this.elements.resultSummary.innerHTML = `
+
+                <div class="result-verdict">
+
+                    <div class="result-verdict-label">
+                        FILEGUARD ANALYSIS
+                    </div>
+
+                    <div class="result-verdict-title">
+                        ${this.escapeHTML(
+                            detection.format ||
+                            "FILE ANALYZED"
+                        )}
+                    </div>
+
+                    <p class="result-verdict-description">
+                        File identity, cryptographic integrity,
+                        byte-level format detection and applicable
+                        structural analysis were performed locally.
+                        Security findings are evidence-based signals,
+                        not a claim that the file is malware.
+                    </p>
+
+                </div>
+
+
+                <div class="file-summary">
+
+                    ${this.summaryItem(
+                        "FILE",
+                        file.name || "Unknown"
+                    )}
+
+                    ${this.summaryItem(
+                        "SIZE",
+                        this.formatBytes(file.size)
+                    )}
+
+                    ${this.summaryItem(
+                        "DETECTED FORMAT",
+                        detection.format || "Unknown"
+                    )}
+
+                    ${this.summaryItem(
+                        "CATEGORY",
+                        detection.category || "Unknown"
+                    )}
+
+                    ${this.summaryItem(
+                        "CONFIDENCE",
+                        detection.confidenceLevel
+                            ? `${detection.confidenceLevel} · ${detection.confidenceScore ?? 0}%`
+                            : "Unavailable"
+                    )}
+
+                    ${this.summaryItem(
+                        "CONTAINER",
+                        archive
+                            ? archive.containerType
+                            : "None"
+                    )}
+
+                    ${this.summaryItem(
+                        "FINDINGS",
+                        String(findings.length)
+                    )}
+
+                    ${this.summaryItem(
+                        "HIGHEST SEVERITY",
+                        highestSeverity
+                    )}
+
+                    ${this.summaryItem(
+                        "SHA-256",
+                        hashes.sha256 || "Unavailable"
+                    )}
+
+                </div>
+            `;
+        }
+
+
+        if (
+            this.elements.resultFindings
+        ) {
+
+            this.renderFindingSummary(
+                findings
+            );
+        }
+    },
+
+
+    renderFindingSummary(findings) {
+
+        if (
             findings.length === 0
-                ? "No rule-based findings were generated by the current analysis layer."
-                : `${findings.length} finding${findings.length === 1 ? "" : "s"} generated.`;
+        ) {
+
+            this.elements.resultFindings.innerHTML = `
+
+                <div class="result-verdict">
+
+                    <div class="result-verdict-label">
+                        FINDINGS
+                    </div>
+
+                    <div class="result-verdict-title">
+                        NO RULE-BASED FINDINGS
+                    </div>
+
+                    <p class="result-verdict-description">
+                        No security-relevant rule finding was
+                        generated by the analyzers currently
+                        enabled for this file.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
 
 
-        this.elements.resultContent.innerHTML = `
+        this.elements.resultFindings.innerHTML = `
 
             <div class="result-verdict">
 
                 <div class="result-verdict-label">
-                    FILEGUARD ANALYSIS
+                    FINDINGS
                 </div>
 
                 <div class="result-verdict-title">
-                    BASELINE ANALYSIS COMPLETE
+                    ${findings.length}
+                    ${findings.length === 1
+                        ? "FINDING"
+                        : "FINDINGS"}
                 </div>
-
-                <p class="result-verdict-description">
-                    File identity and cryptographic integrity
-                    data were collected locally. No malware
-                    verdict is generated by this analysis layer
-                    without supporting security evidence.
-                </p>
 
             </div>
 
 
             <div class="file-summary">
 
-                <div class="summary-item">
+                ${findings
+                    .map(
+                        (finding) =>
+                            this.renderFindingCard(
+                                finding
+                            )
+                    )
+                    .join("")}
 
-                    <div class="summary-label">
-                        FILE
-                    </div>
+            </div>
+        `;
+    },
 
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            file.name || "Unknown"
-                        )}
-                    </div>
 
+    renderFindingCard(finding) {
+
+        const severity =
+            finding.severity ||
+            "INFO";
+
+
+        const confidence =
+            finding.confidence ||
+            "MEDIUM";
+
+
+        return `
+
+            <div class="summary-item">
+
+                <div class="summary-label">
+                    ${this.escapeHTML(
+                        severity
+                    )}
                 </div>
 
+                <div class="summary-value">
 
-                <div class="summary-item">
-
-                    <div class="summary-label">
-                        SIZE
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.formatBytes(
-                            file.size
-                        )}
-                    </div>
-
-                </div>
-
-
-                <div class="summary-item">
-
-                    <div class="summary-label">
-                        MIME TYPE
-                    </div>
-
-                    <div class="summary-value">
+                    <strong>
                         ${this.escapeHTML(
-                            file.type || "unknown"
+                            finding.title ||
+                            "Unnamed finding"
                         )}
-                    </div>
+                    </strong>
 
-                </div>
+                    <br>
 
+                    ${this.escapeHTML(
+                        finding.description ||
+                        "No description available."
+                    )}
 
-                <div class="summary-item">
+                    <br><br>
 
-                    <div class="summary-label">
-                        EXTENSION
-                    </div>
-
-                    <div class="summary-value">
+                    <span>
+                        CONFIDENCE:
                         ${this.escapeHTML(
-                            identity.extension
-                                ? "." + identity.extension
-                                : "none"
+                            confidence
                         )}
-                    </div>
-
-                </div>
-
-
-                <div class="summary-item">
-
-                    <div class="summary-label">
-                        SHA-256
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            hashes.sha256 || "Unavailable"
-                        )}
-                    </div>
-
-                </div>
-
-
-                <div class="summary-item">
-
-                    <div class="summary-label">
-                        SHA-384
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            hashes.sha384 || "Unavailable"
-                        )}
-                    </div>
-
-                </div>
-
-
-                <div class="summary-item">
-
-                    <div class="summary-label">
-                        SHA-512
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            hashes.sha512 || "Unavailable"
-                        )}
-                    </div>
-
-                </div>
-
-
-                <div class="summary-item">
-
-                    <div class="summary-label">
-                        FINDINGS
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            findingText
-                        )}
-                    </div>
+                    </span>
 
                 </div>
 
@@ -651,12 +874,19 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
-     * WORKSPACE
-     * ─────────────────────────────
+     * WORKSPACE TABS
      */
 
     activateWorkspaceTab(panel) {
+
+        if (
+            !panel
+        ) {
+
+            panel =
+                "overview";
+        }
+
 
         for (
             const tab
@@ -670,13 +900,31 @@ const FileGuardApp = {
         }
 
 
-        this.renderWorkspace(panel);
+        for (
+            const workspacePanel
+            of this.elements.workspacePanels
+        ) {
+
+            workspacePanel.classList.toggle(
+                "active",
+                workspacePanel.dataset.panelContent ===
+                panel
+            );
+        }
+
+
+        this.renderWorkspace(
+            panel
+        );
     },
 
 
     renderWorkspace(panel) {
 
-        if (!this.currentResult) {
+        if (
+            !this.currentResult
+        ) {
+
             return;
         }
 
@@ -722,9 +970,7 @@ const FileGuardApp = {
 
 
     /*
-     * ─────────────────────────────
-     * WORKSPACE PANELS
-     * ─────────────────────────────
+     * OVERVIEW
      */
 
     renderOverviewPanel() {
@@ -732,12 +978,20 @@ const FileGuardApp = {
         const result =
             this.currentResult;
 
+        const detection =
+            result.detection ||
+            {};
+
+        const archive =
+            result.archive ||
+            null;
 
         const findings =
-            result.findings || [];
+            result.findings ||
+            [];
 
 
-        this.elements.workspaceContent.innerHTML = `
+        this.elements.overviewPanel.innerHTML = `
 
             <div class="result-verdict">
 
@@ -746,15 +1000,13 @@ const FileGuardApp = {
                 </div>
 
                 <div class="result-verdict-title">
-                    LOCAL BASELINE READY
+                    LOCAL ANALYSIS COMPLETE
                 </div>
 
                 <p class="result-verdict-description">
-                    The current engine has established file
-                    identity, calculated cryptographic hashes
-                    and completed the generic analysis layer.
-                    Specialized analyzers will add deeper
-                    evidence in later versions.
+                    FileGuard established the file identity,
+                    cryptographic hashes, detected format and
+                    applicable specialized analysis.
                 </p>
 
             </div>
@@ -762,166 +1014,4 @@ const FileGuardApp = {
 
             <div class="file-summary">
 
-                <div class="summary-item">
-                    <div class="summary-label">
-                        ANALYZER
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            result.analyzer || "generic"
-                        )}
-                    </div>
-                </div>
-
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        ANALYSIS TIME
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            `${result.durationMs || 0} ms`
-                        )}
-                    </div>
-                </div>
-
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        FINDINGS
-                    </div>
-
-                    <div class="summary-value">
-                        ${findings.length}
-                    </div>
-                </div>
-
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        MODE
-                    </div>
-
-                    <div class="summary-value">
-                        LOCAL-FIRST
-                    </div>
-                </div>
-
-            </div>
-        `;
-    },
-
-
-    renderIdentityPanel() {
-
-        const identity =
-            this.currentResult.identity || {};
-
-
-        this.elements.workspaceContent.innerHTML = `
-
-            <div class="result-verdict">
-
-                <div class="result-verdict-label">
-                    IDENTITY
-                </div>
-
-                <div class="result-verdict-title">
-                    FILE IDENTIFIED
-                </div>
-
-                <p class="result-verdict-description">
-                    Basic file identity was collected directly
-                    from the selected browser File object.
-                </p>
-
-            </div>
-
-
-            <div class="file-summary">
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        NAME
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            identity.name || "Unknown"
-                        )}
-                    </div>
-                </div>
-
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        EXTENSION
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            identity.extension
-                                ? "." + identity.extension
-                                : "none"
-                        )}
-                    </div>
-                </div>
-
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        MIME
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.escapeHTML(
-                            identity.mimeType || "unknown"
-                        )}
-                    </div>
-                </div>
-
-
-                <div class="summary-item">
-                    <div class="summary-label">
-                        SIZE
-                    </div>
-
-                    <div class="summary-value">
-                        ${this.formatBytes(
-                            identity.size
-                        )}
-                    </div>
-                </div>
-
-            </div>
-        `;
-    },
-
-
-    renderStructurePanel() {
-
-        const structure =
-            this.currentResult.structure;
-
-
-        this.elements.workspaceContent.innerHTML = `
-
-            <div class="result-verdict">
-
-                <div class="result-verdict-label">
-                    STRUCTURE
-                </div>
-
-                <div class="result-verdict-title">
-                    ${structure && structure.available
-                        ? "STRUCTURE LAYER AVAILABLE"
-                        : "STRUCTURE ANALYSIS PENDING"}
-                </div>
-
-                <p class="result-verdict-description">
-                    The generic structural engine is registered,
-                    but deep byte-level and container inspection
-                    is not yet enabled in this version.
-   
+         
