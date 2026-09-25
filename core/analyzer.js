@@ -1,7 +1,7 @@
 "use strict";
 
 const FileGuardAnalyzer = {
-    VERSION: "1.6.0",
+    VERSION: "1.7.0",
 
     async analyze(file, onProgress = null) {
         this.validateFile(file);
@@ -76,7 +76,8 @@ const FileGuardAnalyzer = {
         );
 
 
-        const extension = identity.extension;
+        const extension =
+            identity.extension;
 
         const zipExtensions = [
             "zip",
@@ -120,7 +121,9 @@ const FileGuardAnalyzer = {
                 Boolean(
                     detection &&
                     detection.formatId === "apk"
-                )
+                ),
+
+            correlationRan: false
         };
 
 
@@ -194,7 +197,8 @@ const FileGuardAnalyzer = {
             );
 
 
-        let findings = rawFindings;
+        let findings =
+            rawFindings;
 
 
         if (
@@ -234,6 +238,78 @@ const FileGuardAnalyzer = {
         );
 
 
+        /*
+         * CORRELATION ENGINE
+         *
+         * Correlation does not replace findings.
+         * It combines independent observations into
+         * higher-level investigative signals.
+         *
+         * It must never be interpreted as an automatic
+         * malware verdict.
+         */
+
+        this.reportProgress(
+            onProgress,
+            "correlation",
+            "running"
+        );
+
+
+        let correlations = [];
+
+
+        if (
+            window.FileGuardCorrelation &&
+            typeof window.FileGuardCorrelation.correlate === "function"
+        ) {
+            correlations =
+                window.FileGuardCorrelation.correlate(
+                    findings,
+                    {
+                        identity,
+                        detection,
+                        archive,
+                        generic
+                    }
+                );
+
+            analysisPlan.correlationRan = true;
+        }
+
+
+        const correlationSummary =
+            window.FileGuardCorrelation &&
+            typeof window.FileGuardCorrelation.summarize === "function"
+                ? window.FileGuardCorrelation.summarize(
+                    correlations
+                )
+                : {
+                    total: correlations.length,
+                    high: 0,
+                    medium: 0,
+                    low: 0,
+                    info: 0
+                };
+
+
+        this.reportProgress(
+            onProgress,
+            "correlation",
+            "completed",
+            {
+                correlations,
+                summary: correlationSummary
+            }
+        );
+
+
+        /*
+         * Evidence is built after correlation so the final
+         * evidence graph contains both direct findings and
+         * higher-level relationships.
+         */
+
         this.reportProgress(
             onProgress,
             "evidence",
@@ -245,7 +321,8 @@ const FileGuardAnalyzer = {
             this.buildEvidence(
                 detection,
                 archive,
-                findings
+                findings,
+                correlations
             );
 
 
@@ -296,7 +373,8 @@ const FileGuardAnalyzer = {
 
             analyzer: "core",
 
-            analyzerVersion: this.VERSION,
+            analyzerVersion:
+                this.VERSION,
 
             durationMs,
 
@@ -304,7 +382,8 @@ const FileGuardAnalyzer = {
                 name: file.name,
                 size: file.size,
                 type: file.type || "unknown",
-                lastModified: file.lastModified || null
+                lastModified:
+                    file.lastModified || null
             },
 
             analysisPlan,
@@ -328,14 +407,27 @@ const FileGuardAnalyzer = {
 
             findingSummary,
 
+            correlations,
+
+            correlationSummary,
+
             evidence,
 
             evidenceSummary,
 
             analyzers: {
-                generic: Boolean(generic),
-                archive: Boolean(archive),
-                apk: false
+                generic:
+                    Boolean(generic),
+
+                archive:
+                    Boolean(archive),
+
+                apk: false,
+
+                correlation:
+                    Boolean(
+                        analysisPlan.correlationRan
+                    )
             }
         };
 
@@ -355,7 +447,8 @@ const FileGuardAnalyzer = {
     buildEvidence(
         detection,
         archive,
-        findings
+        findings,
+        correlations
     ) {
         if (!window.FileGuardEvidence) {
             return [];
@@ -386,26 +479,44 @@ const FileGuardAnalyzer = {
                 : [];
 
 
+        /*
+         * Correlations use the same evidence contract as
+         * findings. Their evidence object contains the IDs
+         * of all findings that produced the correlation.
+         */
+        const correlationEvidence =
+            typeof window.FileGuardEvidence.fromFindings === "function"
+                ? window.FileGuardEvidence.fromFindings(
+                    correlations
+                )
+                : [];
+
+
         return typeof window.FileGuardEvidence.merge === "function"
             ? window.FileGuardEvidence.merge(
                 detectorEvidence,
                 archiveEvidence,
-                findingEvidence
+                findingEvidence,
+                correlationEvidence
             )
             : [
                 ...detectorEvidence,
                 ...archiveEvidence,
-                ...findingEvidence
+                ...findingEvidence,
+                ...correlationEvidence
             ];
     },
 
 
     buildIdentity(file) {
         return {
-            name: file.name,
+            name:
+                file.name,
 
             extension:
-                this.getExtension(file.name),
+                this.getExtension(
+                    file.name
+                ),
 
             mimeType:
                 file.type || "unknown",
@@ -437,7 +548,9 @@ const FileGuardAnalyzer = {
 
         if (
             detection &&
-            Array.isArray(detection.anomalies)
+            Array.isArray(
+                detection.anomalies
+            )
         ) {
             for (
                 const anomaly
@@ -448,7 +561,8 @@ const FileGuardAnalyzer = {
                         `detector-${anomaly.id}`,
 
                     severity:
-                        anomaly.severity || "INFO",
+                        anomaly.severity ||
+                        "INFO",
 
                     confidence:
                         detection.confidenceLevel ||
@@ -462,7 +576,8 @@ const FileGuardAnalyzer = {
                         "The file detector identified a characteristic that requires review.",
 
                     evidence:
-                        anomaly.evidence || null,
+                        anomaly.evidence ||
+                        null,
 
                     recommendation:
                         this.getFindingRecommendation(
@@ -478,7 +593,9 @@ const FileGuardAnalyzer = {
 
         if (
             archive &&
-            Array.isArray(archive.findings)
+            Array.isArray(
+                archive.findings
+            )
         ) {
             for (
                 const finding
@@ -486,6 +603,7 @@ const FileGuardAnalyzer = {
             ) {
                 findings.push({
                     ...finding,
+
                     source:
                         finding.source ||
                         "archive"
@@ -497,7 +615,8 @@ const FileGuardAnalyzer = {
         if (
             generic &&
             generic.identity &&
-            generic.identity.mimeType !== "unknown" &&
+            generic.identity.mimeType !==
+                "unknown" &&
             identity.extension &&
             detection &&
             detection.extensionMatches === false
@@ -556,7 +675,9 @@ const FileGuardAnalyzer = {
     },
 
 
-    getFindingRecommendation(anomalyId) {
+    getFindingRecommendation(
+        anomalyId
+    ) {
         const recommendations = {
             "unknown-format":
                 "Treat the file as an unknown binary until its structure can be inspected.",
@@ -572,13 +693,17 @@ const FileGuardAnalyzer = {
         };
 
         return (
-            recommendations[anomalyId] ||
+            recommendations[
+                anomalyId
+            ] ||
             "Review the associated evidence before taking further action."
         );
     },
 
 
-    getExpectedExtensions(mimeType) {
+    getExpectedExtensions(
+        mimeType
+    ) {
         const map = {
             "application/pdf": [
                 "pdf"
@@ -656,7 +781,8 @@ const FileGuardAnalyzer = {
 
         if (
             lastDot <= 0 ||
-            lastDot === fileName.length - 1
+            lastDot ===
+                fileName.length - 1
         ) {
             return "";
         }
