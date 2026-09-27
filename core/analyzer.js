@@ -1,349 +1,115 @@
 "use strict";
 
-/*
- * FILEGUARD
- * Core Analyzer
- *
- * V1.8.0
- *
- * Pipeline:
- *
- * File
- *  ↓
- * Identity
- *  ↓
- * Hashes
- *  ↓
- * Detection
- *  ↓
- * Analysis Plan / Router
- *  ↓
- * Selected Analyzers
- *  ↓
- * Findings
- *  ↓
- * Correlation
- *  ↓
- * Evidence
- *  ↓
- * Result
- *
- * The core analyzer orchestrates analysis.
- * It does not contain format-specific routing rules.
- */
-
-
 const FileGuardAnalyzer = {
+    VERSION: "2.0.0",
 
-    VERSION: "1.8.0",
-
-
-    /*
-     * ─────────────────────────────
-     * MAIN ANALYSIS PIPELINE
-     * ─────────────────────────────
-     */
-
-    async analyze(
-        file,
-        onProgress = null
-    ) {
-
-        this.validateFile(file);
-
-
-        const startedAt =
-            performance.now();
-
-
-        /*
-         * IDENTITY
-         */
-
-        this.reportProgress(
-            onProgress,
-            "identity",
-            "running"
-        );
-
-
-        const identity =
-            this.buildIdentity(file);
-
-
-        this.reportProgress(
-            onProgress,
-            "identity",
-            "completed",
-            identity
-        );
-
-
-        /*
-         * HASHES
-         */
-
-        this.reportProgress(
-            onProgress,
-            "hashes",
-            "running"
-        );
-
-
-        if (
-            !window.FileGuardHash ||
-            typeof window.FileGuardHash.calculateAll !==
-                "function"
-        ) {
-
-            throw new Error(
-                "FileGuardHash module is not available."
-            );
+    async analyze(file, onProgress = null) {
+        if (!(file instanceof File)) {
+            throw new TypeError("Invalid File object.");
         }
 
+        const start = performance.now();
+        const progress = (step, status, data = null) => {
+            if (typeof onProgress === "function") {
+                onProgress({
+                    step,
+                    status,
+                    data,
+                    timestamp: Date.now()
+                });
+            }
+        };
 
+        progress("identity", "running");
+        const identity = this.identity(file);
+        progress("identity", "completed", identity);
+
+        progress("hashes", "running");
+        this.require("FileGuardHash", "calculateAll");
         const hashes =
-            await window.FileGuardHash.calculateAll(
-                file
-            );
+            await FileGuardHash.calculateAll(file);
+        progress("hashes", "completed", hashes);
 
-
-        this.reportProgress(
-            onProgress,
-            "hashes",
-            "completed",
-            hashes
-        );
-
-
-        /*
-         * DETECTION
-         */
-
-        this.reportProgress(
-            onProgress,
-            "detection",
-            "running"
-        );
-
-
-        if (
-            !window.FileGuardDetector ||
-            typeof window.FileGuardDetector.detect !==
-                "function"
-        ) {
-
-            throw new Error(
-                "FileGuardDetector module is not available."
-            );
-        }
-
-
+        progress("detection", "running");
+        this.require("FileGuardDetector", "detect");
         const detection =
-            await window.FileGuardDetector.detect(
-                file
-            );
+            await FileGuardDetector.detect(file);
+        progress("detection", "completed", detection);
 
-
-        this.reportProgress(
-            onProgress,
-            "detection",
-            "completed",
-            detection
-        );
-
-
-        /*
-         * ANALYSIS PLAN
-         *
-         * The router decides which analyzers
-         * are relevant for this file.
-         */
-
-        this.reportProgress(
-            onProgress,
-            "plan",
-            "running"
-        );
-
-
-        if (
-            !window.FileGuardAnalysisPlan ||
-            typeof window.FileGuardAnalysisPlan.create !==
-                "function"
-        ) {
-
-            throw new Error(
-                "FileGuardAnalysisPlan module is not available."
-            );
-        }
-
-
-        const analysisPlan =
-            window.FileGuardAnalysisPlan.create(
+        progress("plan", "running");
+        this.require("FileGuardAnalysisPlan", "create");
+        const plan =
+            FileGuardAnalysisPlan.create(
                 identity,
                 detection
             );
-
-
-        this.reportProgress(
-            onProgress,
-            "plan",
-            "completed",
-            analysisPlan
-        );
-
-
-        /*
-         * ANALYZERS
-         */
+        progress("plan", "completed", plan);
 
         let generic = null;
         let archive = null;
         let apk = null;
 
-
-        /*
-         * GENERIC ANALYZER
-         */
-
-        if (
-            this.planIncludes(
-                analysisPlan,
-                "generic"
-            )
-        ) {
-
-            this.reportProgress(
-                onProgress,
-                "generic",
-                "running"
-            );
-
+        if (this.has(plan, "generic")) {
+            progress("generic", "running");
 
             if (
                 window.FileGuardGenericAnalyzer &&
-                typeof window.FileGuardGenericAnalyzer.analyze ===
+                typeof FileGuardGenericAnalyzer.analyze ===
                     "function"
             ) {
-
                 generic =
-                    await window.FileGuardGenericAnalyzer.analyze(
+                    await FileGuardGenericAnalyzer.analyze(
                         file
                     );
             }
 
-
-            this.reportProgress(
-                onProgress,
-                "generic",
-                "completed",
-                generic
-            );
+            progress("generic", "completed", generic);
         }
 
-
-        /*
-         * ARCHIVE ANALYZER
-         */
-
-        if (
-            this.planIncludes(
-                analysisPlan,
-                "archive"
-            )
-        ) {
-
-            this.reportProgress(
-                onProgress,
-                "archive",
-                "running"
-            );
-
+        if (this.has(plan, "archive")) {
+            progress("archive", "running");
 
             if (
                 window.FileGuardArchiveAnalyzer &&
-                typeof window.FileGuardArchiveAnalyzer.analyze ===
+                typeof FileGuardArchiveAnalyzer.analyze ===
                     "function"
             ) {
-
                 archive =
-                    await window.FileGuardArchiveAnalyzer.analyze(
+                    await FileGuardArchiveAnalyzer.analyze(
                         file
                     );
             }
 
-
-            this.reportProgress(
-                onProgress,
-                "archive",
-                "completed",
-                archive
-            );
+            progress("archive", "completed", archive);
         }
 
-
-        /*
-         * APK ANALYZER
-         *
-         * The router can already identify APK files,
-         * but the deep APK analyzer is not implemented yet.
-         */
-
-        if (
-            this.planIncludes(
-                analysisPlan,
-                "apk"
-            )
-        ) {
-
-            this.reportProgress(
-                onProgress,
-                "apk",
-                "running"
-            );
-
+        if (this.has(plan, "apk")) {
+            progress("apk", "running");
 
             if (
                 window.FileGuardAPKAnalyzer &&
-                typeof window.FileGuardAPKAnalyzer.analyze ===
+                typeof FileGuardAPKAnalyzer.analyze ===
                     "function"
             ) {
-
                 apk =
-                    await window.FileGuardAPKAnalyzer.analyze(
+                    await FileGuardAPKAnalyzer.analyze(
                         file,
                         {
                             identity,
                             detection,
+                            plan,
                             archive
                         }
                     );
             }
 
-
-            this.reportProgress(
-                onProgress,
-                "apk",
-                "completed",
-                apk
-            );
+            progress("apk", "completed", apk);
         }
 
+        progress("findings", "running");
 
-        /*
-         * FINDINGS
-         */
-
-        this.reportProgress(
-            onProgress,
-            "findings",
-            "running"
-        );
-
-
-        const rawFindings =
-            this.collectInitialFindings(
+        let findings =
+            this.collectFindings(
                 identity,
                 detection,
                 generic,
@@ -351,130 +117,76 @@ const FileGuardAnalyzer = {
                 apk
             );
 
-
-        let findings =
-            rawFindings;
-
-
         if (
             window.FileGuardFindings &&
-            typeof window.FileGuardFindings.normalize ===
+            typeof FileGuardFindings.normalize ===
                 "function"
         ) {
-
             findings =
-                window.FileGuardFindings.normalize(
-                    rawFindings
+                FileGuardFindings.normalize(
+                    findings
                 );
         }
 
-
         const findingSummary =
             window.FileGuardFindings &&
-            typeof window.FileGuardFindings.summarize ===
+            typeof FileGuardFindings.summarize ===
                 "function"
-
-                ? window.FileGuardFindings.summarize(
+                ? FileGuardFindings.summarize(
                     findings
                 )
-
                 : {
-                    total: findings.length,
-                    high: 0,
-                    medium: 0,
-                    low: 0,
-                    info: 0
+                    total: findings.length
                 };
 
+        progress("findings", "completed", {
+            findings,
+            summary: findingSummary
+        });
 
-        this.reportProgress(
-            onProgress,
-            "findings",
-            "completed",
-            {
-                findings,
-                summary: findingSummary
-            }
-        );
-
-
-        /*
-         * CORRELATION
-         */
-
-        this.reportProgress(
-            onProgress,
-            "correlation",
-            "running"
-        );
-
+        progress("correlation", "running");
 
         let correlations = [];
 
-
         if (
             window.FileGuardCorrelation &&
-            typeof window.FileGuardCorrelation.correlate ===
+            typeof FileGuardCorrelation.correlate ===
                 "function"
         ) {
-
             correlations =
-                window.FileGuardCorrelation.correlate(
+                FileGuardCorrelation.correlate(
                     findings,
                     {
                         identity,
                         detection,
-                        analysisPlan,
-                        archive,
+                        plan,
                         generic,
+                        archive,
                         apk
                     }
                 );
         }
 
-
         const correlationSummary =
             window.FileGuardCorrelation &&
-            typeof window.FileGuardCorrelation.summarize ===
+            typeof FileGuardCorrelation.summarize ===
                 "function"
-
-                ? window.FileGuardCorrelation.summarize(
+                ? FileGuardCorrelation.summarize(
                     correlations
                 )
-
                 : {
-                    total: correlations.length,
-                    high: 0,
-                    medium: 0,
-                    low: 0,
-                    info: 0
+                    total: correlations.length
                 };
 
+        progress("correlation", "completed", {
+            correlations,
+            summary: correlationSummary
+        });
 
-        this.reportProgress(
-            onProgress,
-            "correlation",
-            "completed",
-            {
-                correlations,
-                summary: correlationSummary
-            }
-        );
-
-
-        /*
-         * EVIDENCE
-         */
-
-        this.reportProgress(
-            onProgress,
-            "evidence",
-            "running"
-        );
-
+        progress("evidence", "running");
 
         const evidence =
-            this.buildEvidence(
+            this.evidence(
                 detection,
                 archive,
                 findings,
@@ -482,341 +194,152 @@ const FileGuardAnalyzer = {
                 apk
             );
 
-
         const evidenceSummary =
             window.FileGuardEvidence &&
-            typeof window.FileGuardEvidence.summarize ===
+            typeof FileGuardEvidence.summarize ===
                 "function"
-
-                ? window.FileGuardEvidence.summarize(
+                ? FileGuardEvidence.summarize(
                     evidence
                 )
+                : {
+                    total: evidence.length
+                };
 
-                : null;
-
-
-        this.reportProgress(
-            onProgress,
-            "evidence",
-            "completed",
-            {
-                evidence,
-                summary: evidenceSummary
-            }
-        );
-
-
-        /*
-         * FINAL STRUCTURE
-         */
-
-        const durationMs =
-            Math.round(
-                performance.now() -
-                startedAt
-            );
-
-
-        const structure =
-            archive
-                ? {
-                    available: true,
-
-                    status:
-                        archive.status,
-
-                    format:
-                        archive.format,
-
-                    containerType:
-                        archive.containerType,
-
-                    entryCount:
-                        archive.entryCount,
-
-                    statistics:
-                        archive.statistics,
-
-                    features:
-                        archive.features
-                }
-
-                : generic
-                    ? generic.structure
-                    : null;
-
-
-        /*
-         * FINAL RESULT
-         */
+        progress("evidence", "completed", {
+            evidence,
+            summary: evidenceSummary
+        });
 
         const result = {
+            status: "completed",
+            analyzer: "core",
+            analyzerVersion: this.VERSION,
 
-            status:
-                "completed",
-
-            analyzer:
-                "core",
-
-            analyzerVersion:
-                this.VERSION,
-
-            durationMs,
-
+            durationMs: Math.round(
+                performance.now() - start
+            ),
 
             file: {
-
-                name:
-                    file.name,
-
-                size:
-                    file.size,
-
-                type:
-                    file.type ||
-                    "unknown",
-
+                name: file.name,
+                size: file.size,
+                type: file.type || "unknown",
                 lastModified:
-                    file.lastModified ||
-                    null
+                    file.lastModified || null
             },
 
-
-            analysisPlan,
-
-
             identity,
-
-
             hashes,
-
-
             detection,
+            analysisPlan: plan,
 
-
+            generic,
             archive,
-
-
             apk,
 
-
-            structure,
-
+            structure:
+                archive || generic
+                    ? this.structure(
+                        archive,
+                        generic
+                    )
+                    : null,
 
             metadata:
-                generic
+                generic &&
+                generic.metadata
                     ? generic.metadata
                     : null,
 
-
             findings,
-
-
             findingSummary,
 
-
             correlations,
-
-
             correlationSummary,
 
-
             evidence,
-
-
             evidenceSummary,
 
-
             analyzers: {
-
-                generic:
-                    Boolean(
-                        generic
-                    ),
-
-                archive:
-                    Boolean(
-                        archive
-                    ),
-
-                apk:
-                    Boolean(
-                        apk
-                    ),
-
+                generic: !!generic,
+                archive: !!archive,
+                apk: !!apk,
                 correlation:
-                    correlations.length >
-                    0
+                    correlations.length > 0
             }
-
         };
 
-
-        this.reportProgress(
-            onProgress,
+        progress(
             "complete",
             "completed",
             result
         );
 
-
         return result;
     },
 
+    require(name, method) {
+        const module = window[name];
 
-    /*
-     * ─────────────────────────────
-     * PLAN HELPERS
-     * ─────────────────────────────
-     */
-
-    planIncludes(
-        analysisPlan,
-        analyzerId
-    ) {
-
-        if (
-            !analysisPlan ||
-            !Array.isArray(
-                analysisPlan.enabledAnalyzers
-            )
-        ) {
-            return false;
-        }
-
-
-        return analysisPlan.enabledAnalyzers.includes(
-            analyzerId
-        );
-    },
-
-
-    /*
-     * ─────────────────────────────
-     * EVIDENCE
-     * ─────────────────────────────
-     */
-
-    buildEvidence(
-        detection,
-        archive,
-        findings,
-        correlations,
-        apk
-    ) {
-
-        if (
-            !window.FileGuardEvidence
-        ) {
-            return [];
-        }
-
-
-        const detectorEvidence =
-            typeof window.FileGuardEvidence.fromDetection ===
-                "function"
-
-                ? window.FileGuardEvidence.fromDetection(
-                    detection
-                )
-
-                : [];
-
-
-        const archiveEvidence =
-            typeof window.FileGuardEvidence.fromArchive ===
-                "function"
-
-                ? window.FileGuardEvidence.fromArchive(
-                    archive
-                )
-
-                : [];
-
-
-        const findingEvidence =
-            typeof window.FileGuardEvidence.fromFindings ===
-                "function"
-
-                ? window.FileGuardEvidence.fromFindings(
-                    findings
-                )
-
-                : [];
-
-
-        const correlationEvidence =
-            typeof window.FileGuardEvidence.fromFindings ===
-                "function"
-
-                ? window.FileGuardEvidence.fromFindings(
-                    correlations
-                )
-
-                : [];
-
-
-        /*
-         * APK evidence will be integrated here once
-         * the deep APK analyzer exists.
-         */
-
-        const apkEvidence =
-            apk &&
-            Array.isArray(
-                apk.evidence
-            )
-
-                ? apk.evidence
-
-                : [];
-
-
-        if (
-            typeof window.FileGuardEvidence.merge ===
-                "function"
-        ) {
-
-            return window.FileGuardEvidence.merge(
-                detectorEvidence,
-                archiveEvidence,
-                findingEvidence,
-                correlationEvidence,
-                apkEvidence
+        if (!module) {
+            throw new Error(
+                `${name} module is not available.`
             );
         }
 
-
-        return [
-            ...detectorEvidence,
-            ...archiveEvidence,
-            ...findingEvidence,
-            ...correlationEvidence,
-            ...apkEvidence
-        ];
+        if (
+            method &&
+            typeof module[method] !==
+                "function"
+        ) {
+            throw new Error(
+                `${name}.${method} is not available.`
+            );
+        }
     },
 
+    identity(file) {
+        const name = file.name || "";
+        const dot = name.lastIndexOf(".");
 
-    /*
-     * ─────────────────────────────
-     * FINDINGS
-     * ─────────────────────────────
-     */
+        return {
+            name,
+            filename: name,
 
-    collectInitialFindings(
+            extension:
+                dot > 0
+                    ? name
+                        .slice(dot + 1)
+                        .toLowerCase()
+                    : "",
+
+            mimeType:
+                file.type || "unknown",
+
+            size: file.size,
+
+            lastModified:
+                file.lastModified || null
+        };
+    },
+
+    has(plan, id) {
+        return !!(
+            plan &&
+            Array.isArray(
+                plan.enabledAnalyzers
+            ) &&
+            plan.enabledAnalyzers.includes(id)
+        );
+    },
+
+    collectFindings(
         identity,
         detection,
         generic,
         archive,
         apk
     ) {
-
-        const findings = [];
-
-
-        /*
-         * DETECTOR FINDINGS
-         */
+        const result = [];
 
         if (
             detection &&
@@ -824,22 +347,23 @@ const FileGuardAnalyzer = {
                 detection.anomalies
             )
         ) {
-
             for (
                 const anomaly
                 of detection.anomalies
             ) {
+                if (!anomaly) {
+                    continue;
+                }
 
-                findings.push({
-
+                result.push({
                     id:
-                        `detector-${anomaly.id}`,
+                        `detector-${anomaly.id || "anomaly"}`,
 
                     severity:
-                        anomaly.severity ||
-                        "INFO",
+                        anomaly.severity || "INFO",
 
                     confidence:
+                        anomaly.confidence ||
                         detection.confidenceLevel ||
                         "MEDIUM",
 
@@ -848,191 +372,193 @@ const FileGuardAnalyzer = {
                         "File detection anomaly",
 
                     description:
-                        "The file detector identified a characteristic that requires review.",
+                        anomaly.description ||
+                        "The detector identified a characteristic that requires review.",
 
                     evidence:
-                        anomaly.evidence ||
-                        null,
+                        anomaly.evidence || null,
 
                     recommendation:
-                        this.getFindingRecommendation(
+                        this.recommendation(
                             anomaly.id
                         ),
 
-                    source:
-                        "detector"
+                    source: "detector",
+                    category: "detection"
                 });
             }
         }
 
-
-        /*
-         * ARCHIVE FINDINGS
-         */
-
         if (
-            archive &&
-            Array.isArray(
-                archive.findings
-            )
-        ) {
-
-            for (
-                const finding
-                of archive.findings
-            ) {
-
-                findings.push({
-
-                    ...finding,
-
-                    source:
-                        finding.source ||
-                        "archive"
-                });
-            }
-        }
-
-
-        /*
-         * GENERIC EXTENSION / MIME MISMATCH
-         */
-
-        if (
-            generic &&
-            generic.identity &&
-            generic.identity.mimeType !==
-                "unknown" &&
-            identity.extension &&
             detection &&
             detection.extensionMatches === false
         ) {
+            result.push({
+                id: "extension-mismatch",
+                severity: "LOW",
+                confidence: "HIGH",
+                title:
+                    "Filename extension does not match detected format.",
+                description:
+                    "The file extension differs from the format detected from its contents.",
+                evidence: {
+                    extension:
+                        identity.extension,
+                    detectedFormat:
+                        detection.format ||
+                        detection.primary ||
+                        "unknown"
+                },
+                recommendation:
+                    "Verify the file source and detected format before opening it.",
+                source: "detector",
+                category: "identity"
+            });
+        }
 
-            const extension =
-                identity.extension;
-
-
-            const mimeType =
-                generic.identity.mimeType;
-
-
-            const expectedExtensions =
-                this.getExpectedExtensions(
-                    mimeType
-                );
-
-
+        for (
+            const source of [
+                archive,
+                generic,
+                apk
+            ]
+        ) {
             if (
-                expectedExtensions.length > 0 &&
-                !expectedExtensions.includes(
-                    extension
+                source &&
+                Array.isArray(
+                    source.findings
                 )
             ) {
-
-                findings.push({
-
-                    id:
-                        "extension-mime-mismatch",
-
-                    severity:
-                        "LOW",
-
-                    confidence:
-                        "MEDIUM",
-
-                    title:
-                        "Extension and MIME type differ",
-
-                    description:
-                        "The filename extension does not match the detected browser MIME type.",
-
-                    evidence: {
-
-                        extension,
-
-                        mimeType,
-
-                        expectedExtensions
-                    },
-
-                    recommendation:
-                        "Verify the file type before opening or processing it.",
-
-                    source:
-                        "generic"
-                });
+                result.push(
+                    ...source.findings.map(
+                        finding => ({
+                            ...finding,
+                            source:
+                                finding.source ||
+                                source.analyzer ||
+                                "analyzer"
+                        })
+                    )
+                );
             }
         }
 
+        return result;
+    },
 
-        /*
-         * APK FINDINGS
-         */
+    evidence(
+        detection,
+        archive,
+        findings,
+        correlations,
+        apk
+    ) {
+        if (!window.FileGuardEvidence) {
+            return [];
+        }
+
+        const groups = [];
+
+        if (
+            typeof FileGuardEvidence.fromDetection ===
+            "function"
+        ) {
+            groups.push(
+                FileGuardEvidence.fromDetection(
+                    detection
+                )
+            );
+        }
+
+        if (
+            typeof FileGuardEvidence.fromArchive ===
+            "function"
+        ) {
+            groups.push(
+                FileGuardEvidence.fromArchive(
+                    archive
+                )
+            );
+        }
+
+        if (
+            typeof FileGuardEvidence.fromFindings ===
+            "function"
+        ) {
+            groups.push(
+                FileGuardEvidence.fromFindings(
+                    findings
+                ),
+                FileGuardEvidence.fromFindings(
+                    correlations
+                )
+            );
+        }
 
         if (
             apk &&
-            Array.isArray(
-                apk.findings
-            )
+            Array.isArray(apk.evidence)
         ) {
-
-            for (
-                const finding
-                of apk.findings
-            ) {
-
-                findings.push({
-
-                    ...finding,
-
-                    source:
-                        finding.source ||
-                        "apk"
-                });
-            }
+            groups.push(apk.evidence);
         }
 
+        if (
+            typeof FileGuardEvidence.merge ===
+            "function"
+        ) {
+            return FileGuardEvidence.merge(
+                ...groups
+            );
+        }
 
-        return findings;
+        return groups.flat();
     },
 
-
-    /*
-     * ─────────────────────────────
-     * RECOMMENDATIONS
-     * ─────────────────────────────
-     */
-
-    getFindingRecommendation(
-        anomalyId
-    ) {
-
-        const recommendations = {
-
-            "unknown-format":
-                "Treat the file as an unknown binary until its structure can be inspected.",
-
-            "extension-mismatch":
-                "Verify the file source and inspect the detected format before opening it.",
-
-            "mime-mismatch":
-                "Do not rely on the browser MIME type alone. Verify the file structure and source.",
-
-            "multiple-signatures":
-                "Inspect the file structure and container contents before drawing a security conclusion."
-        };
-
+    structure(archive, generic) {
+        if (archive) {
+            return {
+                available: true,
+                status: archive.status || "unknown",
+                format: archive.format || null,
+                containerType:
+                    archive.containerType || null,
+                entryCount:
+                    archive.entryCount || 0,
+                statistics:
+                    archive.statistics || null,
+                features:
+                    archive.features || null
+            };
+        }
 
         return (
-            recommendations[
-                anomalyId
-            ] ||
-
-            "Review the associated evidence before taking further action."
+            generic.structure || {
+                available: false
+            }
         );
     },
 
+    recommendation(id) {
+        const map = {
+            "unknown-format":
+                "Treat the file as unidentified until its structure and source are understood.",
 
-    /*
-     * ─────────────────────────────
-     * MIME → EXPEC
+            "extension-mismatch":
+                "Verify the file source and detected format before opening it.",
+
+            "mime-mismatch":
+                "Verify the file structure instead of relying only on its MIME type.",
+
+            "multiple-signatures":
+                "Inspect the file structure before drawing a security conclusion."
+        };
+
+        return (
+            map[id] ||
+            "Review the associated evidence before taking further action."
+        );
+    }
+};
+
+window.FileGuardAnalyzer =
+    FileGuardAnalyzer;
