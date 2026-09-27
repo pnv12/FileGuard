@@ -1,977 +1,450 @@
 "use strict";
 
-/*
- * FILEGUARD
- * File Detector
- *
- * V1.0
- *
- * Purpose:
- * - inspect real file bytes
- * - identify known file signatures
- * - compare detected format with filename extension
- * - compare detected format with browser MIME type
- * - detect container formats
- * - calculate detection confidence
- * - provide normalized detection data to the router
- *
- * IMPORTANT:
- * File extension and browser MIME type are treated as hints.
- * The byte signature is the primary source when available.
- */
-
-
 const FileGuardDetector = {
+    VERSION: "2.0.0",
 
-    VERSION: "1.0.0",
-
-    DEFAULT_HEADER_SIZE: 512,
-
-    MAX_SIGNATURE_OFFSET: 256,
-
-
-    SIGNATURES: [
-
-        {
-            id: "png",
-            format: "PNG",
-            category: "image",
-            mimeTypes: [
-                "image/png"
-            ],
-            extensions: [
-                "png"
-            ],
-            signature: [
-                0x89, 0x50, 0x4E, 0x47,
-                0x0D, 0x0A, 0x1A, 0x0A
-            ]
-        },
-
-
-        {
-            id: "jpeg",
-            format: "JPEG",
-            category: "image",
-            mimeTypes: [
-                "image/jpeg"
-            ],
-            extensions: [
-                "jpg",
-                "jpeg",
-                "jpe"
-            ],
-            signature: [
-                0xFF, 0xD8, 0xFF
-            ]
-        },
-
-
-        {
-            id: "gif",
-            format: "GIF",
-            category: "image",
-            mimeTypes: [
-                "image/gif"
-            ],
-            extensions: [
-                "gif"
-            ],
-            signatures: [
-                [
-                    0x47, 0x49, 0x46, 0x38,
-                    0x37, 0x61
-                ],
-                [
-                    0x47, 0x49, 0x46, 0x38,
-                    0x39, 0x61
-                ]
-            ]
-        },
-
-
-        {
-            id: "webp",
-            format: "WEBP",
-            category: "image",
-            mimeTypes: [
-                "image/webp"
-            ],
-            extensions: [
-                "webp"
-            ],
-            customDetector:
-                "riff-webp"
-        },
-
-
-        {
-            id: "pdf",
-            format: "PDF",
-            category: "document",
-            mimeTypes: [
-                "application/pdf"
-            ],
-            extensions: [
-                "pdf"
-            ],
-            signature: [
-                0x25, 0x50, 0x44, 0x46,
-                0x2D
-            ]
-        },
-
-
-        {
-            id: "zip",
-            format: "ZIP",
-            category: "archive",
-            mimeTypes: [
-                "application/zip",
-                "application/x-zip-compressed"
-            ],
-            extensions: [
-                "zip"
-            ],
-            signatures: [
-                [
-                    0x50, 0x4B, 0x03, 0x04
-                ],
-                [
-                    0x50, 0x4B, 0x05, 0x06
-                ],
-                [
-                    0x50, 0x4B, 0x07, 0x08
-                ]
-            ]
-        },
-
-
-        {
-            id: "gzip",
-            format: "GZIP",
-            category: "archive",
-            mimeTypes: [
-                "application/gzip",
-                "application/x-gzip"
-            ],
-            extensions: [
-                "gz",
-                "gzip"
-            ],
-            signature: [
-                0x1F, 0x8B
-            ]
-        },
-
-
-        {
-            id: "bzip2",
-            format: "BZIP2",
-            category: "archive",
-            mimeTypes: [
-                "application/x-bzip2"
-            ],
-            extensions: [
-                "bz2"
-            ],
-            signature: [
-                0x42, 0x5A, 0x68
-            ]
-        },
-
-
-        {
-            id: "rar",
-            format: "RAR",
-            category: "archive",
-            mimeTypes: [
-                "application/vnd.rar"
-            ],
-            extensions: [
-                "rar"
-            ],
-            signatures: [
-                [
-                    0x52, 0x61, 0x72, 0x21,
-                    0x1A, 0x07, 0x00
-                ],
-                [
-                    0x52, 0x61, 0x72, 0x21,
-                    0x1A, 0x07, 0x01,
-                    0x00
-                ]
-            ]
-        },
-
-
-        {
-            id: "7z",
-            format: "7-Zip",
-            category: "archive",
-            mimeTypes: [
-                "application/x-7z-compressed"
-            ],
-            extensions: [
-                "7z"
-            ],
-            signature: [
-                0x37, 0x7A, 0xBC, 0xAF,
-                0x27, 0x1C
-            ]
-        },
-
-
-        {
-            id: "elf",
-            format: "ELF",
-            category: "executable",
-            mimeTypes: [
-                "application/x-executable",
-                "application/x-elf"
-            ],
-            extensions: [
-                "elf",
-                "so"
-            ],
-            signature: [
-                0x7F, 0x45, 0x4C, 0x46
-            ]
-        },
-
-
-        {
-            id: "pe",
-            format: "PE",
-            category: "executable",
-            mimeTypes: [
-                "application/vnd.microsoft.portable-executable",
-                "application/x-msdownload"
-            ],
-            extensions: [
-                "exe",
-                "dll",
-                "sys",
-                "scr"
-            ],
-            signature: [
-                0x4D, 0x5A
-            ]
-        },
-
-
-        {
-            id: "wasm",
-            format: "WebAssembly",
-            category: "executable",
-            mimeTypes: [
-                "application/wasm"
-            ],
-            extensions: [
-                "wasm"
-            ],
-            signature: [
-                0x00, 0x61, 0x73, 0x6D
-            ]
-        },
-
-
-        {
-            id: "mp3",
-            format: "MP3",
-            category: "audio",
-            mimeTypes: [
-                "audio/mpeg"
-            ],
-            extensions: [
-                "mp3"
-            ],
-            customDetector:
-                "mp3"
-        },
-
-
-        {
-            id: "wav",
-            format: "WAV",
-            category: "audio",
-            mimeTypes: [
-                "audio/wav",
-                "audio/x-wav"
-            ],
-            extensions: [
-                "wav"
-            ],
-            customDetector:
-                "riff-wav"
-        },
-
-
-        {
-            id: "ogg",
-            format: "OGG",
-            category: "audio",
-            mimeTypes: [
-                "audio/ogg"
-            ],
-            extensions: [
-                "ogg",
-                "oga",
-                "ogv"
-            ],
-            signature: [
-                0x4F, 0x67, 0x67, 0x53
-            ]
-        },
-
-
-        {
-            id: "flac",
-            format: "FLAC",
-            category: "audio",
-            mimeTypes: [
-                "audio/flac"
-            ],
-            extensions: [
-                "flac"
-            ],
-            signature: [
-                0x66, 0x4C, 0x61, 0x43
-            ]
-        },
-
-
-        {
-            id: "mp4",
-            format: "MP4",
-            category: "video",
-            mimeTypes: [
-                "video/mp4"
-            ],
-            extensions: [
-                "mp4"
-            ],
-            customDetector:
-                "mp4"
-        },
-
-
-        {
-            id: "webm",
-            format: "WebM",
-            category: "video",
-            mimeTypes: [
-                "video/webm"
-            ],
-            extensions: [
-                "webm"
-            ],
-            signature: [
-                0x1A, 0x45, 0xDF, 0xA3
-            ]
-        },
-
-
-        {
-            id: "avi",
-            format: "AVI",
-            category: "video",
-            mimeTypes: [
-                "video/x-msvideo"
-            ],
-            extensions: [
-                "avi"
-            ],
-            customDetector:
-                "riff-avi"
-        },
-
-
-        {
-            id: "docx",
-            format: "DOCX",
-            category: "document",
-            mimeTypes: [
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            ],
-            extensions: [
-                "docx"
-            ],
-            signatures: [
-                [
-                    0x50, 0x4B, 0x03, 0x04
-                ],
-                [
-                    0x50, 0x4B, 0x05, 0x06
-                ],
-                [
-                    0x50, 0x4B, 0x07, 0x08
-                ]
-            ],
-            containerType: "zip"
-        },
-
-
-        {
-            id: "xlsx",
-            format: "XLSX",
-            category: "document",
-            mimeTypes: [
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            ],
-            extensions: [
-                "xlsx"
-            ],
-            signatures: [
-                [
-                    0x50, 0x4B, 0x03, 0x04
-                ],
-                [
-                    0x50, 0x4B, 0x05, 0x06
-                ],
-                [
-                    0x50, 0x4B, 0x07, 0x08
-                ]
-            ],
-            containerType: "zip"
-        },
-
-
-        {
-            id: "pptx",
-            format: "PPTX",
-            category: "document",
-            mimeTypes: [
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            ],
-            extensions: [
-                "pptx"
-            ],
-            signatures: [
-                [
-                    0x50, 0x4B, 0x03, 0x04
-                ],
-                [
-                    0x50, 0x4B, 0x05, 0x06
-                ],
-                [
-                    0x50, 0x4B, 0x07, 0x08
-                ]
-            ],
-            containerType: "zip"
-        },
-
-
-        {
-            id: "jar",
-            format: "JAR",
-            category: "archive",
-            mimeTypes: [
-                "application/java-archive"
-            ],
-            extensions: [
-                "jar"
-            ],
-            signatures: [
-                [
-                    0x50, 0x4B, 0x03, 0x04
-                ],
-                [
-                    0x50, 0x4B, 0x05, 0x06
-                ],
-                [
-                    0x50, 0x4B, 0x07, 0x08
-                ]
-            ],
-            containerType: "zip"
-        }
-
-
+    signatures: [
+        ["png","PNG","image","image/png",["png"],[89,80,78,71,13,10,26,10]],
+        ["jpeg","JPEG","image","image/jpeg",["jpg","jpeg","jpe"],[255,216,255]],
+        ["gif","GIF","image","image/gif",["gif"],[71,73,70,56]],
+        ["webp","WEBP","image","image/webp",["webp"],null],
+        ["pdf","PDF","document","application/pdf",["pdf"],[37,80,68,70,45]],
+        ["zip","ZIP","archive","application/zip",["zip"],[80,75,3,4]],
+        ["gzip","GZIP","archive","application/gzip",["gz","gzip"],[31,139]],
+        ["bz2","BZIP2","archive","application/x-bzip2",["bz2"],[66,90,104]],
+        ["rar","RAR","archive","application/vnd.rar",["rar"],[82,97,114,33,26,7]],
+        ["7z","7-Zip","archive","application/x-7z-compressed",["7z"],[55,122,188,175,39,28]],
+        ["elf","ELF","executable","application/x-elf",["elf","so"],[127,69,76,70]],
+        ["pe","PE","executable","application/x-msdownload",["exe","dll","sys","scr"],[77,90]],
+        ["wasm","WebAssembly","executable","application/wasm",["wasm"],[0,97,115,109]],
+        ["ogg","OGG","audio","audio/ogg",["ogg","oga","ogv"],[79,103,103,83]],
+        ["flac","FLAC","audio","audio/flac",["flac"],[102,76,97,67]],
+        ["webm","WebM","video","video/webm",["webm"],[26,69,223,163]],
+        ["docx","DOCX","document","application/vnd.openxmlformats-officedocument.wordprocessingml.document",["docx"],[80,75,3,4]],
+        ["xlsx","XLSX","document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",["xlsx"],[80,75,3,4]],
+        ["pptx","PPTX","document","application/vnd.openxmlformats-officedocument.presentationml.presentation",["pptx"],[80,75,3,4]],
+        ["jar","JAR","archive","application/java-archive",["jar"],[80,75,3,4]]
     ],
 
-
     async detect(file) {
+        if (!(file instanceof File)) {
+            throw new TypeError("Invalid File object.");
+        }
 
-        this.validateFile(file);
+        const bytes = new Uint8Array(
+            await file.slice(0, 512).arrayBuffer()
+        );
 
+        const extension = this.extension(file.name);
+        const mime = file.type || "unknown";
 
-        const header =
-            await this.readHeader(
-                file,
-                this.DEFAULT_HEADER_SIZE
-            );
+        let matches = this.signatures
+            .filter(x => x[5] && this.match(bytes, x[5]))
+            .map(x => this.def(x));
 
+        matches.push(
+            ...this.custom(bytes)
+        );
 
-        const extension =
-            this.getExtension(
-                file.name
-            );
-
-
-        const browserMime =
-            file.type || "unknown";
-
-
-        const byteMatches =
-            this.detectBySignature(
-                header
-            );
-
-
-        const customMatches =
-            this.detectCustomFormats(
-                header
-            );
-
-
-        const allMatches =
-            [
-                ...byteMatches,
-                ...customMatches
-            ];
-
-
-        const uniqueMatches =
-            this.deduplicateMatches(
-                allMatches
-            );
-
+        matches = this.unique(matches);
 
         const primary =
-            this.selectPrimaryMatch(
-                uniqueMatches,
-                extension,
-                browserMime
-            );
+            this.primary(matches, extension, mime);
 
+        const extMatch = primary
+            ? primary.extensions.includes(extension)
+            : false;
 
-        const extensionMatch =
-            this.matchExtension(
-                primary,
-                extension
-            );
-
-
-        const mimeMatch =
-            this.matchMimeType(
-                primary,
-                browserMime
-            );
-
+        const mimeMatch = primary
+            ? primary.mimeTypes.includes(mime)
+            : false;
 
         const confidence =
-            this.calculateConfidence(
-                primary,
-                extensionMatch,
-                mimeMatch
-            );
+            this.confidence(primary, extMatch, mimeMatch);
 
+        const anomalies = [];
 
-        const anomalies =
-            this.buildAnomalies(
-                primary,
-                extension,
-                browserMime,
-                extensionMatch,
-                mimeMatch,
-                uniqueMatches
-            );
+        if (!primary) {
+            anomalies.push({
+                id: "unknown-format",
+                severity: "INFO",
+                confidence: "MEDIUM",
+                title: "Unknown file format",
+                description:
+                    "No known file signature was detected.",
+                evidence: {
+                    extension,
+                    mimeType: mime
+                }
+            });
+        }
 
+        if (
+            primary &&
+            extension &&
+            !extMatch
+        ) {
+            anomalies.push({
+                id: "extension-mismatch",
+                severity: "LOW",
+                confidence: "HIGH",
+                title: "Extension mismatch",
+                description:
+                    "The filename extension does not match the detected format.",
+                evidence: {
+                    extension,
+                    detectedFormat: primary.format
+                }
+            });
+        }
+
+        if (
+            primary &&
+            mime !== "unknown" &&
+            !mimeMatch
+        ) {
+            anomalies.push({
+                id: "mime-mismatch",
+                severity: "LOW",
+                confidence: "MEDIUM",
+                title: "MIME type mismatch",
+                description:
+                    "The browser-provided MIME type differs from the detected format.",
+                evidence: {
+                    browserMime: mime,
+                    detectedFormat: primary.format
+                }
+            });
+        }
+
+        if (matches.length > 1) {
+            anomalies.push({
+                id: "multiple-signatures",
+                severity: "LOW",
+                confidence: "MEDIUM",
+                title: "Multiple format signatures detected",
+                description:
+                    "More than one known format matched the file header.",
+                evidence: {
+                    formats: matches.map(
+                        x => x.format
+                    )
+                }
+            });
+        }
 
         return {
-
             detector: "signature",
+            detectorVersion: this.VERSION,
 
-            detectorVersion:
-                this.VERSION,
+            status: primary
+                ? "detected"
+                : "unknown",
 
-            status:
-                primary
-                    ? "detected"
-                    : "unknown",
+            format: primary
+                ? primary.format
+                : "Unknown",
 
-            format:
-                primary
-                    ? primary.format
-                    : "Unknown",
+            formatId: primary
+                ? primary.id
+                : "unknown",
 
-            formatId:
-                primary
-                    ? primary.id
-                    : "unknown",
-
-            category:
-                primary
-                    ? primary.category
-                    : "unknown",
+            category: primary
+                ? primary.category
+                : "unknown",
 
             confidence,
-
-            confidenceScore:
-                confidence.score,
-
-            confidenceLevel:
-                confidence.level,
+            confidenceScore: confidence.score,
+            confidenceLevel: confidence.level,
 
             extension,
-
-            browserMime,
+            browserMime: mime,
 
             detectedMimeTypes:
                 primary
-                    ? primary.mimeTypes || []
+                    ? primary.mimeTypes
                     : [],
 
             expectedExtensions:
                 primary
-                    ? primary.extensions || []
+                    ? primary.extensions
                     : [],
 
-            signatureMatched:
-                Boolean(primary),
+            signatureMatched: !!primary,
 
             container:
                 primary
                     ? primary.containerType || null
                     : null,
 
-            matches:
-                uniqueMatches.map(
-                    (match) => ({
-                        id: match.id,
-                        format: match.format,
-                        category: match.category,
-                        containerType:
-                            match.containerType || null
-                    })
-                ),
+            extensionMatches: extMatch,
+            mimeMatches: mimeMatch,
+
+            matches: matches.map(x => ({
+                id: x.id,
+                format: x.format,
+                category: x.category,
+                containerType:
+                    x.containerType || null
+            })),
 
             anomalies,
 
             evidence: {
-
                 headerBytes:
-                    this.bytesToHex(
-                        header.slice(
+                    this.hex(
+                        bytes.slice(
                             0,
-                            Math.min(
-                                header.length,
-                                32
-                            )
+                            Math.min(32, bytes.length)
                         )
                     ),
 
                 signature:
                     primary
-                        ? this.getMatchedSignature(
-                            primary,
-                            header
+                        ? this.hex(
+                            primary.matchedSignature
                         )
                         : null
-
             }
-
         };
     },
 
-
-    async readHeader(file, size) {
-
-        const safeSize =
-            Math.min(
-                size,
-                file.size
-            );
-
-
-        const buffer =
-            await file.slice(
-                0,
-                safeSize
-            ).arrayBuffer();
-
-
-        return new Uint8Array(
-            buffer
-        );
+    def(x) {
+        return {
+            id: x[0],
+            format: x[1],
+            category: x[2],
+            mimeTypes: [x[3]],
+            extensions: x[4],
+            signature: x[5],
+            matchedSignature: x[5]
+        };
     },
 
-
-    detectBySignature(bytes) {
-
-        const matches = [];
-
-
-        for (
-            const definition
-            of this.SIGNATURES
-        ) {
-
-            if (!definition.signature &&
-                !definition.signatures) {
-
-                continue;
-            }
-
-
-            const signatures =
-                definition.signatures ||
-                [
-                    definition.signature
-                ];
-
-
-            for (
-                const signature
-                of signatures
-            ) {
-
-                if (
-                    this.matchesSignature(
-                        bytes,
-                        signature
-                    )
-                ) {
-
-                    matches.push({
-                        ...definition,
-                        matchedSignature:
-                            signature
-                    });
-
-                    break;
-                }
-            }
-        }
-
-
-        return matches;
-    },
-
-
-    detectCustomFormats(bytes) {
-
-        const matches = [];
-
-
-        for (
-            const definition
-            of this.SIGNATURES
-        ) {
-
-            if (
-                !definition.customDetector
-            ) {
-                continue;
-            }
-
-
-            const matched =
-                this.runCustomDetector(
-                    definition.customDetector,
-                    bytes
-                );
-
-
-            if (matched) {
-
-                matches.push({
-                    ...definition,
-                    matchedSignature:
-                        matched
-                });
-            }
-        }
-
-
-        return matches;
-    },
-
-
-    runCustomDetector(type, bytes) {
-
-        switch (type) {
-
-            case "riff-webp":
-
-                if (
-                    this.matchesAscii(
-                        bytes,
-                        "RIFF",
-                        0
-                    ) &&
-                    this.matchesAscii(
-                        bytes,
-                        "WEBP",
-                        8
-                    )
-                ) {
-
-                    return this.sliceBytes(
-                        bytes,
-                        0,
-                        12
-                    );
-                }
-
-                return null;
-
-
-            case "riff-wav":
-
-                if (
-                    this.matchesAscii(
-                        bytes,
-                        "RIFF",
-                        0
-                    ) &&
-                    this.matchesAscii(
-                        bytes,
-                        "WAVE",
-                        8
-                    )
-                ) {
-
-                    return this.sliceBytes(
-                        bytes,
-                        0,
-                        12
-                    );
-                }
-
-                return null;
-
-
-            case "riff-avi":
-
-                if (
-                    this.matchesAscii(
-                        bytes,
-                        "RIFF",
-                        0
-                    ) &&
-                    this.matchesAscii(
-                        bytes,
-                        "AVI ",
-                        8
-                    )
-                ) {
-
-                    return this.sliceBytes(
-                        bytes,
-                        0,
-                        12
-                    );
-                }
-
-                return null;
-
-
-            case "mp4":
-
-                return this.detectMp4(
-                    bytes
-                );
-
-
-            case "mp3":
-
-                return this.detectMp3(
-                    bytes
-                );
-
-
-            default:
-
-                return null;
-        }
-    },
-
-
-    detectMp4(bytes) {
-
-        /*
-         * ISO Base Media File Format:
-         * first box starts with 4-byte size
-         * followed by 4-byte type.
-         *
-         * Common MP4 brands:
-         * isom, iso2, mp41, mp42, avc1,
-         * M4V, M4A, MSNV, etc.
-         */
-
-        if (bytes.length < 12) {
-            return null;
-        }
-
-
-        const boxType =
-            this.ascii(
-                bytes,
-                4,
-                4
-            );
-
+    custom(bytes) {
+        const out = [];
 
         if (
-            boxType !== "ftyp"
+            this.ascii(bytes,0,4) === "RIFF" &&
+            this.ascii(bytes,8,4) === "WEBP"
         ) {
+            out.push({
+                id: "webp",
+                format: "WEBP",
+                category: "image",
+                mimeTypes: ["image/webp"],
+                extensions: ["webp"],
+                matchedSignature:
+                    Array.from(bytes.slice(0,12))
+            });
+        }
+
+        if (
+            this.ascii(bytes,0,4) === "RIFF" &&
+            this.ascii(bytes,8,4) === "WAVE"
+        ) {
+            out.push({
+                id: "wav",
+                format: "WAV",
+                category: "audio",
+                mimeTypes: [
+                    "audio/wav",
+                    "audio/x-wav"
+                ],
+                extensions: ["wav"],
+                matchedSignature:
+                    Array.from(bytes.slice(0,12))
+            });
+        }
+
+        if (
+            this.ascii(bytes,0,4) === "RIFF" &&
+            this.ascii(bytes,8,4) === "AVI "
+        ) {
+            out.push({
+                id: "avi",
+                format: "AVI",
+                category: "video",
+                mimeTypes: ["video/x-msvideo"],
+                extensions: ["avi"],
+                matchedSignature:
+                    Array.from(bytes.slice(0,12))
+            });
+        }
+
+        if (
+            this.ascii(bytes,4,4) === "ftyp"
+        ) {
+            out.push({
+                id: "mp4",
+                format: "MP4",
+                category: "video",
+                mimeTypes: ["video/mp4"],
+                extensions: ["mp4"],
+                matchedSignature:
+                    Array.from(bytes.slice(4,12))
+            });
+        }
+
+        if (
+            this.ascii(bytes,0,3) === "ID3" ||
+            (
+                bytes.length >= 2 &&
+                bytes[0] === 255 &&
+                (bytes[1] & 224) === 224
+            )
+        ) {
+            out.push({
+                id: "mp3",
+                format: "MP3",
+                category: "audio",
+                mimeTypes: ["audio/mpeg"],
+                extensions: ["mp3"],
+                matchedSignature:
+                    Array.from(bytes.slice(0,3))
+            });
+        }
+
+        return out;
+    },
+
+    primary(matches, ext, mime) {
+        if (!matches.length) {
             return null;
         }
 
+        return (
+            matches.find(
+                x => x.extensions.includes(ext)
+            ) ||
 
-        return this.sliceBytes(
-            bytes,
-            4,
-            8
+            matches.find(
+                x => x.mimeTypes.includes(mime)
+            ) ||
+
+            matches[0]
         );
     },
 
+    confidence(primary, ext, mime) {
+        if (!primary) {
+            return {
+                score: 0,
+                level: "LOW"
+            };
+        }
 
-    detectMp3(bytes) {
+        let score = 60;
 
-        if (bytes.length >= 3) {
+        if (ext) {
+            score += 20;
+        }
 
-            if (
-                this.matchesAscii(
-                    bytes,
-                    "ID3",
-                    0
-                )
-            ) {
+        if (mime) {
+            score += 20;
+        }
 
-                return this.sliceBytes(
-                    bytes,
-                    0,
-                    3
-                );
+        if (
+            primary.extensions.includes(ext)
+        ) {
+            score += 10;
+        }
+
+        if (
+            primary.mimeTypes.includes(mime)
+        ) {
+            score += 10;
+        }
+
+        score = Math.min(100, score);
+
+        return {
+            score,
+            level:
+                score >= 90
+                    ? "HIGH"
+                    : score >= 70
+                        ? "MEDIUM"
+                        : "LOW"
+        };
+    },
+
+    match(bytes, sig) {
+        if (bytes.length < sig.length) {
+            return false;
+        }
+
+        for (
+            let i = 0;
+            i < sig.length;
+            i++
+        ) {
+            if (bytes[i] !== sig[i]) {
+                return false;
             }
         }
 
+        return true;
+    },
 
-        /*
-         * MPEG audio frame sync.
-         *
-         * This is deliberately treated as a
-         * secondary detection because random
-         * binary data can produce similar bytes.
-         */
+    unique(matches) {
+        const map = new Map();
 
-        if (bytes.length >= 2) {
+        for (const item of matches) {
+            if (!map.has(item.id)) {
+                map.set(item.id, item);
+            }
+        }
 
-            const first =
-                bytes[0];
+        return [...map.values()];
+    },
 
-            const second =
-                bytes[1];
+    extension(name) {
+        const clean =
+            String(name || "")
+                .split("/")
+                .pop()
+                .split("\\")
+                .pop();
 
+        const dot =
+            clean.lastIndexOf(".");
 
-            const frameSync =
-                first === 0xFF &&
-                (second & 0xE0) === 0xE0;
+        return dot > 0
+            ? clean
+                .slice(dot + 1)
+                .toLowerCase()
+            : "";
+    },
 
+    ascii(bytes, start, length) {
+        let out = "";
 
-            if (frameSync) {
+        for (
+            let i = start;
+            i < start + length &&
+            i < bytes.length;
+            i++
+        ) {
+            out += String.fromCharCode(
+                bytes[i]
+            );
+        }
 
-                return this.sliceBytes(
-   
+        return out;
+    },
+
+    hex(bytes) {
+        return Array.from(bytes)
+            .map(
+                x =>
+                    x
+                        .toString(16)
+                        .padStart(2, "0")
+            )
+            .join(" ");
+    }
+};
+
+window.FileGuardDetector =
+    FileGuardDetector;
