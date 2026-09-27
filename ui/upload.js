@@ -4,29 +4,36 @@
  * FILEGUARD
  * Upload UI
  *
- * V1.2
+ * V1.3
  *
  * Handles:
  * - native file picker
  * - file selection
  * - drag and drop
  * - file selection events
+ * - upload/loading state
+ * - selected file feedback
  */
-
 
 const FileGuardUploadUI = {
 
     elements: {
         input: null,
         button: null,
-        dropZone: null
+        dropZone: null,
+        localStatus: null,
+        localStatusText: null
     },
-
 
     initialized: false,
 
+    state: "ready",
 
     init() {
+
+        if (this.initialized) {
+            return;
+        }
 
         this.elements.input =
             document.getElementById(
@@ -42,6 +49,18 @@ const FileGuardUploadUI = {
             document.getElementById(
                 "drop-zone"
             );
+
+        this.elements.localStatus =
+            document.querySelector(
+                ".local-status"
+            );
+
+        this.elements.localStatusText =
+            this.elements.localStatus
+                ? this.elements.localStatus.querySelector(
+                    "span:last-child"
+                )
+                : null;
 
 
         if (!this.elements.input) {
@@ -74,14 +93,11 @@ const FileGuardUploadUI = {
         }
 
 
-        if (this.initialized) {
-            return;
-        }
-
-
         this.bindEvents();
 
         this.initialized = true;
+
+        this.setReady();
 
 
         console.log(
@@ -94,13 +110,6 @@ const FileGuardUploadUI = {
 
         /*
          * Native file picker.
-         *
-         * The label in index.html is connected to
-         * this input through:
-         *
-         * for="file-input"
-         *
-         * We do NOT trigger input.click() here.
          */
 
         this.elements.input.addEventListener(
@@ -134,7 +143,9 @@ const FileGuardUploadUI = {
                     files[0];
 
 
-                this.emitFile(file);
+                this.handleFile(
+                    file
+                );
 
             }
         );
@@ -149,6 +160,12 @@ const FileGuardUploadUI = {
             (event) => {
 
                 event.preventDefault();
+
+                if (
+                    this.state === "analyzing"
+                ) {
+                    return;
+                }
 
                 this.elements.dropZone.classList.add(
                     "drag-over"
@@ -189,6 +206,13 @@ const FileGuardUploadUI = {
                 );
 
 
+                if (
+                    this.state === "analyzing"
+                ) {
+                    return;
+                }
+
+
                 const files =
                     event.dataTransfer &&
                     event.dataTransfer.files;
@@ -198,12 +222,11 @@ const FileGuardUploadUI = {
                     !files ||
                     files.length === 0
                 ) {
-
                     return;
                 }
 
 
-                this.emitFile(
+                this.handleFile(
                     files[0]
                 );
 
@@ -213,12 +236,16 @@ const FileGuardUploadUI = {
     },
 
 
-    emitFile(file) {
+    handleFile(file) {
 
         if (!(file instanceof File)) {
 
             console.error(
                 "FileGuardUploadUI: invalid File object."
+            );
+
+            this.setError(
+                "INVALID FILE"
             );
 
             return;
@@ -231,7 +258,20 @@ const FileGuardUploadUI = {
         );
 
 
-        window.dispatchEvent(
+        this.setAnalyzing(
+            file
+        );
+
+
+        /*
+         * IMPORTANT:
+         *
+         * controller.js listens on document.
+         * Therefore the event must also be
+         * dispatched on document.
+         */
+
+        document.dispatchEvent(
             new CustomEvent(
                 "fileguard:file-selected",
                 {
@@ -241,6 +281,209 @@ const FileGuardUploadUI = {
                 }
             )
         );
+
+    },
+
+
+    setAnalyzing(file) {
+
+        this.state = "analyzing";
+
+
+        if (this.elements.dropZone) {
+
+            this.elements.dropZone.classList.add(
+                "is-analyzing"
+            );
+
+        }
+
+
+        if (this.elements.button) {
+
+            this.elements.button.classList.add(
+                "is-disabled"
+            );
+
+            this.elements.button.setAttribute(
+                "aria-disabled",
+                "true"
+            );
+
+        }
+
+
+        if (this.elements.localStatus) {
+
+            this.elements.localStatus.classList.add(
+                "is-analyzing"
+            );
+
+        }
+
+
+        if (this.elements.localStatusText) {
+
+            this.elements.localStatusText.textContent =
+                file && file.name
+                    ? `ANALYZING — ${file.name}`
+                    : "ANALYZING FILE";
+
+        }
+
+    },
+
+
+    setReady() {
+
+        this.state = "ready";
+
+
+        if (this.elements.dropZone) {
+
+            this.elements.dropZone.classList.remove(
+                "is-analyzing"
+            );
+
+        }
+
+
+        if (this.elements.button) {
+
+            this.elements.button.classList.remove(
+                "is-disabled"
+            );
+
+            this.elements.button.removeAttribute(
+                "aria-disabled"
+            );
+
+        }
+
+
+        if (this.elements.localStatus) {
+
+            this.elements.localStatus.classList.remove(
+                "is-analyzing",
+                "is-complete",
+                "is-error"
+            );
+
+        }
+
+
+        if (this.elements.localStatusText) {
+
+            this.elements.localStatusText.textContent =
+                "LOCAL ENGINE — READY";
+
+        }
+
+    },
+
+
+    setComplete(file) {
+
+        this.state = "complete";
+
+
+        if (this.elements.dropZone) {
+
+            this.elements.dropZone.classList.remove(
+                "is-analyzing"
+            );
+
+        }
+
+
+        if (this.elements.button) {
+
+            this.elements.button.classList.remove(
+                "is-disabled"
+            );
+
+            this.elements.button.removeAttribute(
+                "aria-disabled"
+            );
+
+        }
+
+
+        if (this.elements.localStatus) {
+
+            this.elements.localStatus.classList.remove(
+                "is-analyzing",
+                "is-error"
+            );
+
+            this.elements.localStatus.classList.add(
+                "is-complete"
+            );
+
+        }
+
+
+        if (this.elements.localStatusText) {
+
+            this.elements.localStatusText.textContent =
+                file && file.name
+                    ? `ANALYSIS COMPLETE — ${file.name}`
+                    : "LOCAL ENGINE — COMPLETE";
+
+        }
+
+    },
+
+
+    setError(message) {
+
+        this.state = "error";
+
+
+        if (this.elements.dropZone) {
+
+            this.elements.dropZone.classList.remove(
+                "is-analyzing"
+            );
+
+        }
+
+
+        if (this.elements.button) {
+
+            this.elements.button.classList.remove(
+                "is-disabled"
+            );
+
+            this.elements.button.removeAttribute(
+                "aria-disabled"
+            );
+
+        }
+
+
+        if (this.elements.localStatus) {
+
+            this.elements.localStatus.classList.remove(
+                "is-analyzing",
+                "is-complete"
+            );
+
+            this.elements.localStatus.classList.add(
+                "is-error"
+            );
+
+        }
+
+
+        if (this.elements.localStatusText) {
+
+            this.elements.localStatusText.textContent =
+                message
+                    ? `LOCAL ENGINE — ${message}`
+                    : "LOCAL ENGINE — ERROR";
+
+        }
 
     }
 
