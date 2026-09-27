@@ -32,15 +32,11 @@
     padding: 0;
 }
 
-
 html {
     min-height: 100%;
-
     background: var(--bg);
-
     scroll-behavior: smooth;
 }
-
 
 body {
     min-height: 100vh;
@@ -73,18 +69,15 @@ body {
     text-rendering: optimizeLegibility;
 }
 
-
 body,
 button,
 input {
     font: inherit;
 }
 
-
 button {
     border: 0;
 }
-
 
 button:focus-visible,
 label:focus-visible {
@@ -92,13 +85,8 @@ label:focus-visible {
     outline-offset: 4px;
 }
 
-
 main {
-    width: min(
-        100%,
-        var(--max-width)
-    );
-
+    width: min(100%, var(--max-width));
     margin: 0 auto;
 
     padding:
@@ -138,7 +126,6 @@ main {
     -webkit-backdrop-filter: blur(12px);
 }
 
-
 .brand {
     color: var(--text);
 
@@ -147,7 +134,6 @@ main {
 
     letter-spacing: 0.16em;
 }
-
 
 .version {
     color: var(--text-muted);
@@ -165,10 +151,8 @@ main {
 
 .hero {
     max-width: 920px;
-
     margin-bottom: 72px;
 }
-
 
 .hero-label {
     margin-bottom: 20px;
@@ -180,7 +164,6 @@ main {
 
     letter-spacing: 0.22em;
 }
-
 
 .hero h1 {
     max-width: 850px;
@@ -194,12 +177,9 @@ main {
     );
 
     line-height: 0.96;
-
     font-weight: 850;
-
     letter-spacing: -0.06em;
 }
-
 
 .hero-description {
     max-width: 610px;
@@ -209,7 +189,6 @@ main {
     color: var(--text-secondary);
 
     font-size: 15px;
-
     line-height: 1.7;
 }
 
@@ -221,7 +200,6 @@ main {
 .upload-section {
     width: 100%;
 }
-
 
 .drop-zone {
     position: relative;
@@ -245,12 +223,10 @@ main {
         transform 180ms ease;
 }
 
-
 .drop-zone::before {
     content: "";
 
     position: absolute;
-
     inset: 0;
 
     background:
@@ -264,7 +240,6 @@ main {
     pointer-events: none;
 }
 
-
 .drop-zone:hover {
     border-color: var(--border-light);
 
@@ -276,7 +251,6 @@ main {
         );
 }
 
-
 .drop-zone.drag-over {
     border-color: var(--accent);
 
@@ -285,7 +259,6 @@ main {
 
     transform: translateY(-2px);
 }
-
 
 .drop-zone-label {
     position: relative;
@@ -301,7 +274,6 @@ main {
     letter-spacing: 0.2em;
 }
 
-
 .drop-zone-title {
     position: relative;
     z-index: 1;
@@ -314,7 +286,6 @@ main {
     letter-spacing: -0.035em;
 }
 
-
 .drop-zone-subtitle {
     position: relative;
     z-index: 1;
@@ -324,15 +295,12 @@ main {
     color: var(--text-secondary);
 
     font-size: 13px;
-
     line-height: 1.6;
 }
-
 
 .drop-zone > *:not(.file-input) {
     margin-left: 42px;
 }
-
 
 .drop-zone {
     padding-top: 42px;
@@ -345,7 +313,6 @@ main {
     justify-content: center;
 }
 
-
 .primary-button {
     position: relative;
     z-index: 2;
@@ -353,21 +320,18 @@ main {
     margin-top: 28px;
 
     min-height: 46px;
-
     padding: 0 18px;
 
     display: inline-flex;
     align-items: center;
 
     background: var(--accent);
-
     color: #090b0c;
 
     cursor: pointer;
 
     font-size: 10px;
     font-weight: 850;
-
     letter-spacing: 0.14em;
 
     transition:
@@ -375,18 +339,14 @@ main {
         transform 150ms ease;
 }
 
-
 .primary-button:hover {
     background: var(--accent-hover);
-
     transform: translateY(-1px);
 }
-
 
 .primary-button:active {
     transform: translateY(0);
 }
-
 
 .local-status {
     position: relative;
@@ -402,10 +362,8 @@ main {
 
     font-size: 8px;
     font-weight: 800;
-
     letter-spacing: 0.14em;
 }
-
 
 .status-indicator {
     width: 6px;
@@ -425,7 +383,6 @@ main {
             0.08
         );
 }
-
 
 .file-input {
     position: absolute;
@@ -459,7 +416,6 @@ main {
     border-top: 1px solid var(--border);
 }
 
-
 .section-header {
     min-height: 60px;
 
@@ -467,11 +423,14 @@ main {
     align-items: center;
     justify-content: space-between;
 
+    gap: 20px;
+
     border-bottom: 1px solid var(--border);
 }
 
-
 .section-label {
+    min-width: 0;
+
     color: var(--text);
 
     font-size: 10px;
@@ -480,9 +439,10 @@ main {
     letter-spacing: 0.17em;
 }
 
-
 .analysis-file-name,
 .result-status {
+    min-width: 0;
+
     color: var(--text-muted);
 
     font-size: 9px;
@@ -492,7 +452,8 @@ main {
 
     text-align: right;
 
-    word-break: break-word;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 
@@ -504,7 +465,6 @@ main {
     display: flex;
     flex-direction: column;
 }
-
 
 .analysis-step {
     min-height: 60px;
@@ -521,7 +481,6 @@ main {
         background 150ms ease;
 }
 
-
 .analysis-step:hover {
     background:
         rgba(
@@ -532,10 +491,8 @@ main {
         );
 }
 
-
 .step-index {
     width: 32px;
-
     flex: 0 0 32px;
 
     color: var(--text-muted);
@@ -546,9 +503,9 @@ main {
     letter-spacing: 0.1em;
 }
 
-
 .step-name {
     flex: 1;
+    min-width: 0;
 
     color: var(--text-secondary);
 
@@ -556,18 +513,23 @@ main {
     font-weight: 700;
 
     letter-spacing: 0.08em;
+
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
-
 .step-status {
+    flex: 0 0 auto;
+
     color: var(--text-muted);
 
     font-size: 8px;
     font-weight: 800;
 
     letter-spacing: 0.13em;
-}
 
+    white-space: nowrap;
+}
 
 .analysis-step.active {
     background:
@@ -579,16 +541,13 @@ main {
         );
 }
 
-
 .analysis-step.active .step-name {
     color: var(--text);
 }
 
-
 .analysis-step.active .step-status {
     color: var(--warning);
 }
-
 
 .analysis-step.complete {
     background:
@@ -600,16 +559,13 @@ main {
         );
 }
 
-
 .analysis-step.complete .step-name {
     color: var(--text);
 }
 
-
 .analysis-step.complete .step-status {
     color: var(--accent);
 }
-
 
 .analysis-step.error {
     background:
@@ -620,7 +576,6 @@ main {
             0.025
         );
 }
-
 
 .analysis-step.error .step-status {
     color: var(--danger);
@@ -635,7 +590,6 @@ main {
     margin-top: 28px;
 }
 
-
 .file-summary {
     display: grid;
 
@@ -649,8 +603,8 @@ main {
     border-left: 1px solid var(--border);
 }
 
-
 .summary-item {
+    min-width: 0;
     min-height: 108px;
 
     padding: 20px;
@@ -667,7 +621,6 @@ main {
         );
 }
 
-
 .summary-label {
     color: var(--text-muted);
 
@@ -677,9 +630,10 @@ main {
     letter-spacing: 0.16em;
 }
 
-
 .summary-value {
     display: block;
+
+    min-width: 0;
 
     margin-top: 13px;
 
@@ -690,7 +644,8 @@ main {
 
     line-height: 1.4;
 
-    word-break: break-word;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 
@@ -711,21 +666,21 @@ main {
     border: 1px solid var(--border);
 }
 
-
 .finding-card {
+    min-width: 0;
+
     background: var(--surface);
 
     transition:
         background 150ms ease;
 }
 
-
 .finding-card:hover {
     background: var(--surface-2);
 }
 
-
 .finding-header {
+    min-width: 0;
     min-height: 42px;
 
     padding: 0 16px;
@@ -734,75 +689,86 @@ main {
     align-items: center;
     justify-content: space-between;
 
+    gap: 16px;
+
     border-bottom: 1px solid var(--border);
 }
 
-
 .finding-severity {
+    flex: 0 0 auto;
+
     font-size: 8px;
     font-weight: 850;
 
     letter-spacing: 0.15em;
 }
 
-
 .finding-source {
+    min-width: 0;
+
     color: var(--text-muted);
 
     font-size: 8px;
     font-weight: 800;
 
     letter-spacing: 0.12em;
-}
 
+    text-align: right;
+
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .finding-high .finding-severity {
     color: var(--danger);
 }
 
-
 .finding-medium .finding-severity {
     color: var(--warning);
 }
-
 
 .finding-low .finding-severity {
     color: var(--text-secondary);
 }
 
-
 .finding-info .finding-severity {
     color: var(--accent);
 }
 
-
 .finding-body {
+    min-width: 0;
+
     padding: 22px 16px 24px;
 }
 
-
 .finding-title {
+    min-width: 0;
+
     color: var(--text);
 
     font-size: 16px;
     font-weight: 800;
 
     letter-spacing: -0.02em;
-}
 
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .finding-description {
     max-width: 850px;
+    min-width: 0;
 
     margin-top: 9px;
 
     color: var(--text-secondary);
 
     font-size: 12px;
-
     line-height: 1.65;
-}
 
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .finding-meta {
     margin-top: 18px;
@@ -813,14 +779,14 @@ main {
     gap: 20px;
 }
 
-
 .finding-meta-item {
+    min-width: 0;
+
     display: flex;
     flex-direction: column;
 
     gap: 5px;
 }
-
 
 .finding-meta-label,
 .finding-recommendation-label {
@@ -832,16 +798,19 @@ main {
     letter-spacing: 0.15em;
 }
 
-
 .finding-meta-value {
+    min-width: 0;
+
     color: var(--text-secondary);
 
     font-size: 9px;
     font-weight: 750;
 
     letter-spacing: 0.08em;
-}
 
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 
 .finding-recommendation {
     margin-top: 20px;
@@ -856,22 +825,23 @@ main {
     gap: 7px;
 }
 
-
 .finding-recommendation-text {
+    min-width: 0;
+
     color: var(--text);
 
     font-size: 11px;
-
     line-height: 1.55;
-}
 
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .finding-evidence {
     margin-top: 20px;
 
     border-top: 1px solid var(--border);
 }
-
 
 .finding-evidence summary {
     padding: 14px 0;
@@ -888,11 +858,9 @@ main {
     letter-spacing: 0.14em;
 }
 
-
 .finding-evidence summary::-webkit-details-marker {
     display: none;
 }
-
 
 .finding-evidence summary::before {
     content: "+";
@@ -904,14 +872,13 @@ main {
     color: var(--accent);
 }
 
-
 .finding-evidence[open] summary::before {
     content: "−";
 }
 
-
 .finding-evidence pre {
     max-width: 100%;
+    min-width: 0;
 
     padding: 16px;
 
@@ -932,13 +899,12 @@ main {
         monospace;
 
     font-size: 10px;
-
     line-height: 1.6;
 
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
     word-break: break-word;
 }
-
 
 .findings-empty {
     padding: 28px 20px;
@@ -948,7 +914,6 @@ main {
     border: 1px solid var(--border);
 }
 
-
 .findings-empty-label {
     color: var(--accent);
 
@@ -957,7 +922,6 @@ main {
 
     letter-spacing: 0.16em;
 }
-
 
 .findings-empty-title {
     margin-top: 9px;
@@ -970,7 +934,6 @@ main {
     letter-spacing: -0.01em;
 }
 
-
 .findings-empty-description {
     max-width: 700px;
 
@@ -979,10 +942,8 @@ main {
     color: var(--text-secondary);
 
     font-size: 11px;
-
     line-height: 1.6;
 }
-
 
 /* ═══════════════════════════════════════
    WORKSPACE
@@ -994,7 +955,6 @@ main {
     border-top: 1px solid var(--border);
 }
 
-
 .workspace-tabs {
     display: flex;
 
@@ -1005,11 +965,9 @@ main {
     scrollbar-width: none;
 }
 
-
 .workspace-tabs::-webkit-scrollbar {
     display: none;
 }
-
 
 .workspace-tab {
     flex: 0 0 auto;
@@ -1036,7 +994,6 @@ main {
         background 150ms ease;
 }
 
-
 .workspace-tab:hover {
     color: var(--text-secondary);
 
@@ -1048,7 +1005,6 @@ main {
             0.018
         );
 }
-
 
 .workspace-tab.active {
     color: var(--accent);
@@ -1062,18 +1018,15 @@ main {
         );
 }
 
-
 .workspace-content {
     min-height: 220px;
 }
-
 
 .workspace-panel {
     display: none;
 
     padding: 28px 0;
 }
-
 
 .workspace-panel.active {
     display: block;
@@ -1092,11 +1045,9 @@ main {
     border-top: 1px solid var(--border);
 }
 
-
 .workspace-section:first-child {
     margin-top: 0;
 }
-
 
 .workspace-section-label {
     margin-bottom: 18px;
@@ -1107,8 +1058,10 @@ main {
     font-weight: 850;
 
     letter-spacing: 0.17em;
-}
 
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .workspace-grid {
     display: grid;
@@ -1123,8 +1076,8 @@ main {
     border-left: 1px solid var(--border);
 }
 
-
 .workspace-value {
+    min-width: 0;
     min-height: 84px;
 
     padding: 16px;
@@ -1141,7 +1094,6 @@ main {
         );
 }
 
-
 .workspace-value-label {
     display: block;
 
@@ -1153,9 +1105,10 @@ main {
     letter-spacing: 0.14em;
 }
 
-
 .workspace-value-content {
     display: block;
+
+    min-width: 0;
 
     margin-top: 10px;
 
@@ -1166,9 +1119,9 @@ main {
 
     line-height: 1.45;
 
-    word-break: break-word;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
-
 
 .workspace-list {
     display: flex;
@@ -1177,8 +1130,8 @@ main {
     border-top: 1px solid var(--border);
 }
 
-
 .workspace-list-item {
+    min-width: 0;
     min-height: 58px;
 
     padding: 13px 15px;
@@ -1202,7 +1155,6 @@ main {
         );
 }
 
-
 .workspace-list-main {
     min-width: 0;
 
@@ -1212,25 +1164,30 @@ main {
     gap: 5px;
 }
 
-
 .workspace-list-main strong {
+    min-width: 0;
+
     color: var(--text);
 
     font-size: 11px;
     font-weight: 750;
+
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
-
 .workspace-list-main > span {
+    min-width: 0;
+
     color: var(--text-secondary);
 
     font-size: 10px;
 
     line-height: 1.5;
 
-    word-break: break-word;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
-
 
 .workspace-list-meta {
     flex: 0 0 auto;
@@ -1248,7 +1205,6 @@ main {
     letter-spacing: 0.12em;
 }
 
-
 .workspace-list-label {
     color: var(--text-muted) !important;
 
@@ -1258,8 +1214,9 @@ main {
     letter-spacing: 0.14em;
 }
 
-
 .workspace-monospace {
+    max-width: 100%;
+
     font-family:
         ui-monospace,
         SFMono-Regular,
@@ -1271,8 +1228,10 @@ main {
     font-size: 10px !important;
 
     letter-spacing: 0 !important;
-}
 
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 
 .workspace-empty {
     padding: 20px;
@@ -1287,10 +1246,9 @@ main {
     line-height: 1.6;
 }
 
-
 .workspace-code {
     width: 100%;
-
+    max-width: 100%;
     max-height: 520px;
 
     padding: 18px;
@@ -1316,9 +1274,9 @@ main {
     line-height: 1.6;
 
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
     word-break: break-word;
 }
-
 
 .workspace-note {
     margin-top: 28px;
@@ -1350,6 +1308,8 @@ main {
 .evidence-card {
     margin-top: 1px;
 
+    min-width: 0;
+
     border: 1px solid var(--border);
 
     background: var(--surface);
@@ -1358,13 +1318,12 @@ main {
         background 150ms ease;
 }
 
-
 .evidence-card:hover {
     background: var(--surface-2);
 }
 
-
 .evidence-header {
+    min-width: 0;
     min-height: 42px;
 
     padding: 0 16px;
@@ -1373,42 +1332,49 @@ main {
     align-items: center;
     justify-content: space-between;
 
+    gap: 16px;
+
     border-bottom: 1px solid var(--border);
 }
 
-
 .evidence-importance {
+    flex: 0 0 auto;
+
     font-size: 8px;
     font-weight: 850;
 
     letter-spacing: 0.15em;
 }
 
-
 .evidence-high .evidence-importance {
     color: var(--danger);
 }
-
 
 .evidence-normal .evidence-importance {
     color: var(--accent);
 }
 
-
 .evidence-source {
+    min-width: 0;
+
     color: var(--text-muted);
 
     font-size: 8px;
     font-weight: 800;
 
     letter-spacing: 0.12em;
-}
 
+    text-align: right;
+
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .evidence-body {
+    min-width: 0;
+
     padding: 20px 16px 22px;
 }
-
 
 .evidence-type {
     color: var(--text-muted);
@@ -1419,17 +1385,19 @@ main {
     letter-spacing: 0.15em;
 }
 
-
 .evidence-description {
+    min-width: 0;
+
     margin-top: 9px;
 
     color: var(--text);
 
     font-size: 11px;
-
     line-height: 1.6;
-}
 
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
 
 .evidence-id {
     margin-top: 16px;
@@ -1440,7 +1408,6 @@ main {
     gap: 5px;
 }
 
-
 .evidence-id-label {
     color: var(--text-muted);
 
@@ -1450,8 +1417,9 @@ main {
     letter-spacing: 0.15em;
 }
 
-
 .evidence-id-value {
+    max-width: 100%;
+
     color: var(--text-secondary);
 
     font-family:
@@ -1463,15 +1431,17 @@ main {
         monospace;
 
     font-size: 9px;
-}
+    line-height: 1.5;
 
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 
 .evidence-details {
     margin-top: 18px;
 
     border-top: 1px solid var(--border);
 }
-
 
 .evidence-details summary {
     padding: 13px 0;
@@ -1485,4 +1455,394 @@ main {
     font-size: 8px;
     font-weight: 850;
 
-    letter-spacing: 0.14e
+    letter-spacing: 0.14em;
+}
+
+.evidence-details summary::-webkit-details-marker {
+    display: none;
+}
+
+
+/* ═══════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════ */
+
+@media (max-width: 700px) {
+
+    main {
+        width: 100%;
+
+        padding:
+            56px 16px
+            72px;
+    }
+
+    .topbar {
+        min-height: 56px;
+
+        padding:
+            0 16px;
+    }
+
+    .brand {
+        font-size: 12px;
+        letter-spacing: 0.13em;
+    }
+
+    .version {
+        font-size: 8px;
+    }
+
+    .hero {
+        margin-bottom: 42px;
+    }
+
+    .hero-label {
+        margin-bottom: 14px;
+    }
+
+    .hero h1 {
+        font-size:
+            clamp(
+                42px,
+                15vw,
+                64px
+            );
+
+        line-height: 0.94;
+    }
+
+    .hero-description {
+        margin-top: 22px;
+
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .drop-zone {
+        min-height: 280px;
+
+        padding:
+            32px 22px;
+    }
+
+    .drop-zone > *:not(.file-input) {
+        width:
+            calc(100% - 44px);
+
+        margin-left: 22px;
+    }
+
+    .drop-zone-title {
+        font-size: 25px;
+        line-height: 1.05;
+    }
+
+    .drop-zone-subtitle {
+        font-size: 12px;
+    }
+
+    .local-status {
+        max-width: 100%;
+        line-height: 1.5;
+    }
+
+    .analysis-section,
+    .result-section,
+    .error-section,
+    .workspace {
+        margin-top: 42px;
+    }
+
+    .section-header {
+        min-height: auto;
+
+        padding: 14px 0;
+
+        gap: 9px;
+
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .section-label,
+    .analysis-file-name,
+    .result-status {
+        width: 100%;
+        min-width: 0;
+
+        text-align: left;
+    }
+
+    .analysis-file-name,
+    .result-status {
+        overflow-wrap: anywhere;
+        word-break: normal;
+
+        line-height: 1.45;
+    }
+
+    .analysis-step {
+        min-width: 0;
+        min-height: 54px;
+
+        gap: 10px;
+    }
+
+    .step-index {
+        width: 26px;
+        flex-basis: 26px;
+    }
+
+    .step-name {
+        min-width: 0;
+
+        overflow-wrap: anywhere;
+        word-break: normal;
+
+        line-height: 1.4;
+    }
+
+    .step-status {
+        flex: 0 0 auto;
+
+        white-space: nowrap;
+    }
+
+    .file-summary,
+    .workspace-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-item {
+        min-width: 0;
+        min-height: 86px;
+
+        padding: 16px;
+    }
+
+    .summary-value,
+    .workspace-value-content {
+        min-width: 0;
+
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .result-findings {
+        margin-top: 20px;
+    }
+
+    .finding-header,
+    .evidence-header {
+        min-height: auto;
+
+        padding:
+            12px 14px;
+
+        gap: 8px;
+
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .finding-source,
+    .evidence-source {
+        max-width: 100%;
+
+        text-align: left;
+
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .finding-body,
+    .evidence-body {
+        padding:
+            18px 14px
+            20px;
+    }
+
+    .finding-title,
+    .finding-description,
+    .finding-recommendation-text,
+    .evidence-description {
+        min-width: 0;
+
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .finding-meta {
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .finding-meta-item {
+        min-width: 0;
+    }
+
+    .finding-meta-value {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .workspace-panel {
+        padding:
+            22px 0;
+    }
+
+    .workspace-section {
+        margin-top: 26px;
+
+        padding-top: 16px;
+    }
+
+    .workspace-section-label {
+        margin-bottom: 13px;
+
+        line-height: 1.5;
+
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .workspace-value {
+        min-width: 0;
+        min-height: 72px;
+
+        padding: 14px;
+    }
+
+    .workspace-list-item {
+        min-width: 0;
+
+        padding:
+            13px 14px;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+        justify-content: flex-start;
+
+        gap: 10px;
+    }
+
+    .workspace-list-main {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .workspace-list-main strong,
+    .workspace-list-main > span {
+        max-width: 100%;
+
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .workspace-list-meta {
+        width: 100%;
+        min-width: 0;
+
+        flex-wrap: wrap;
+
+        gap: 8px 12px;
+    }
+
+    .workspace-list-label,
+    .workspace-monospace {
+        max-width: 100%;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .workspace-code,
+    .finding-evidence pre {
+        max-width: 100%;
+
+        overflow-x: auto;
+
+        white-space: pre-wrap;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .evidence-id-value {
+        max-width: 100%;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+
+        line-height: 1.5;
+    }
+}
+
+
+/* ═══════════════════════════════════════
+   SMALL MOBILE
+═══════════════════════════════════════ */
+
+@media (max-width: 420px) {
+
+    main {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .topbar {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .brand {
+        font-size: 11px;
+    }
+
+    .hero h1 {
+        font-size: 40px;
+    }
+
+    .drop-zone {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .drop-zone > *:not(.file-input) {
+        width:
+            calc(100% - 32px);
+
+        margin-left: 16px;
+    }
+
+    .primary-button {
+        width: 100%;
+
+        justify-content: center;
+    }
+
+    .analysis-step {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .step-status {
+        font-size: 7px;
+
+        letter-spacing: 0.08em;
+    }
+
+    .summary-item {
+        padding: 14px;
+    }
+
+    .finding-body,
+    .evidence-body {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+            }
