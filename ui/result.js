@@ -4,7 +4,8 @@ const FileGuardResultUI = {
     elements: {
         section: null,
         status: null,
-        summary: null
+        summary: null,
+        findings: null
     },
 
     initialized: false,
@@ -23,13 +24,19 @@ const FileGuardResultUI = {
         this.elements.summary =
             document.getElementById("result-summary");
 
+        this.elements.findings =
+            document.getElementById("result-findings");
+
         this.initialized = true;
     },
 
     render(result) {
         this.init();
 
-        if (!result || typeof result !== "object") {
+        if (
+            !result ||
+            typeof result !== "object"
+        ) {
             return;
         }
 
@@ -44,11 +51,32 @@ const FileGuardResultUI = {
 
         this.renderSummary(result);
 
+        if (
+            window.FileGuardFindingsUI &&
+            typeof window.FileGuardFindingsUI.render ===
+                "function"
+        ) {
+            window.FileGuardFindingsUI.render(
+                result.findings
+            );
+        }
+
         const analysisSection =
-            document.getElementById("analysis-section");
+            document.getElementById(
+                "analysis-section"
+            );
 
         if (analysisSection) {
             analysisSection.hidden = true;
+        }
+
+        const errorSection =
+            document.getElementById(
+                "error-section"
+            );
+
+        if (errorSection) {
+            errorSection.hidden = true;
         }
     },
 
@@ -104,7 +132,9 @@ const FileGuardResultUI = {
                     </span>
 
                     <span class="summary-value">
-                        ${this.formatBytes(file.size)}
+                        ${this.formatBytes(
+                            file.size
+                        )}
                     </span>
                 </div>
 
@@ -247,7 +277,9 @@ const FileGuardResultUI = {
         }
 
         return active.length > 0
-            ? this.escapeHTML(active.join(" / "))
+            ? this.escapeHTML(
+                active.join(" / ")
+            )
             : "CORE";
     },
 
@@ -310,7 +342,10 @@ const FileGuardResultUI = {
 
         const value =
             bytes /
-            Math.pow(1024, exponent);
+            Math.pow(
+                1024,
+                exponent
+            );
 
         const rounded =
             exponent === 0
@@ -336,7 +371,9 @@ const FileGuardResultUI = {
         }
 
         if (durationMs < 1000) {
-            return `${Math.round(durationMs)} ms`;
+            return `${Math.round(
+                durationMs
+            )} ms`;
         }
 
         return `${(
@@ -345,16 +382,34 @@ const FileGuardResultUI = {
     },
 
     escapeHTML(value) {
-        if (value === null || value === undefined) {
+        if (
+            value === null ||
+            value === undefined
+        ) {
             return "";
         }
 
         return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
     },
 
     hide() {
@@ -366,4 +421,5 @@ const FileGuardResultUI = {
     }
 };
 
-window.FileGuardResultUI = FileGuardResultUI;
+window.FileGuardResultUI =
+    FileGuardResultUI;
