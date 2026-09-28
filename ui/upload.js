@@ -1,20 +1,5 @@
 "use strict";
 
-/*
- * FILEGUARD
- * Upload UI
- *
- * V1.3
- *
- * Handles:
- * - native file picker
- * - file selection
- * - drag and drop
- * - file selection events
- * - upload/loading state
- * - selected file feedback
- */
-
 const FileGuardUploadUI = {
 
     elements: {
@@ -30,7 +15,6 @@ const FileGuardUploadUI = {
     state: "ready",
 
     init() {
-
         if (this.initialized) {
             return;
         }
@@ -62,9 +46,7 @@ const FileGuardUploadUI = {
                 )
                 : null;
 
-
         if (!this.elements.input) {
-
             console.error(
                 "FileGuardUploadUI: file input not found."
             );
@@ -72,9 +54,7 @@ const FileGuardUploadUI = {
             return;
         }
 
-
         if (!this.elements.button) {
-
             console.error(
                 "FileGuardUploadUI: select button not found."
             );
@@ -82,9 +62,7 @@ const FileGuardUploadUI = {
             return;
         }
 
-
         if (!this.elements.dropZone) {
-
             console.error(
                 "FileGuardUploadUI: drop zone not found."
             );
@@ -92,25 +70,18 @@ const FileGuardUploadUI = {
             return;
         }
 
-
         this.bindEvents();
 
         this.initialized = true;
 
         this.setReady();
 
-
         console.log(
             "FileGuardUploadUI: initialized."
         );
     },
 
-
     bindEvents() {
-
-        /*
-         * Native file picker.
-         */
 
         this.elements.input.addEventListener(
             "change",
@@ -119,41 +90,81 @@ const FileGuardUploadUI = {
                 const files =
                     event.target.files;
 
-
-                console.log(
-                    "FileGuardUploadUI: file input changed.",
-                    files
-                );
-
-
                 if (
                     !files ||
                     files.length === 0
                 ) {
-
-                    console.warn(
-                        "FileGuardUploadUI: no file selected."
-                    );
-
                     return;
                 }
 
-
-                const file =
-                    files[0];
-
-
                 this.handleFile(
-                    file
+                    files[0]
                 );
 
             }
         );
 
+        this.elements.button.addEventListener(
+            "click",
+            () => {
 
-        /*
-         * Drag over.
-         */
+                if (
+                    this.state === "analyzing"
+                ) {
+                    return;
+                }
+
+                this.elements.input.click();
+
+            }
+        );
+
+        this.elements.dropZone.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    event.target.closest(
+                        "#select-file-button"
+                    )
+                ) {
+                    return;
+                }
+
+                if (
+                    this.state === "analyzing"
+                ) {
+                    return;
+                }
+
+                this.elements.input.click();
+
+            }
+        );
+
+        this.elements.dropZone.addEventListener(
+            "keydown",
+            (event) => {
+
+                if (
+                    event.key !== "Enter" &&
+                    event.key !== " "
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (
+                    this.state === "analyzing"
+                ) {
+                    return;
+                }
+
+                this.elements.input.click();
+
+            }
+        );
 
         this.elements.dropZone.addEventListener(
             "dragover",
@@ -174,11 +185,6 @@ const FileGuardUploadUI = {
             }
         );
 
-
-        /*
-         * Drag leave.
-         */
-
         this.elements.dropZone.addEventListener(
             "dragleave",
             () => {
@@ -190,11 +196,6 @@ const FileGuardUploadUI = {
             }
         );
 
-
-        /*
-         * Drop.
-         */
-
         this.elements.dropZone.addEventListener(
             "drop",
             (event) => {
@@ -205,18 +206,15 @@ const FileGuardUploadUI = {
                     "drag-over"
                 );
 
-
                 if (
                     this.state === "analyzing"
                 ) {
                     return;
                 }
 
-
                 const files =
                     event.dataTransfer &&
                     event.dataTransfer.files;
-
 
                 if (
                     !files ||
@@ -225,21 +223,17 @@ const FileGuardUploadUI = {
                     return;
                 }
 
-
                 this.handleFile(
                     files[0]
                 );
 
             }
         );
-
     },
-
 
     handleFile(file) {
 
         if (!(file instanceof File)) {
-
             console.error(
                 "FileGuardUploadUI: invalid File object."
             );
@@ -251,25 +245,14 @@ const FileGuardUploadUI = {
             return;
         }
 
-
         console.log(
             "FileGuardUploadUI: selected file:",
             file.name
         );
 
-
         this.setAnalyzing(
             file
         );
-
-
-        /*
-         * IMPORTANT:
-         *
-         * controller.js listens on document.
-         * Therefore the event must also be
-         * dispatched on document.
-         */
 
         document.dispatchEvent(
             new CustomEvent(
@@ -282,25 +265,34 @@ const FileGuardUploadUI = {
             )
         );
 
+        /*
+         * Clear the native input after dispatching.
+         * The File object is already passed to the application,
+         * so this allows selecting the exact same file again later.
+         */
+        if (this.elements.input) {
+            this.elements.input.value =
+                "";
+        }
     },
-
 
     setAnalyzing(file) {
 
-        this.state = "analyzing";
-
+        this.state =
+            "analyzing";
 
         if (this.elements.dropZone) {
-
             this.elements.dropZone.classList.add(
                 "is-analyzing"
             );
 
+            this.elements.dropZone.setAttribute(
+                "aria-disabled",
+                "true"
+            );
         }
 
-
         if (this.elements.button) {
-
             this.elements.button.classList.add(
                 "is-disabled"
             );
@@ -309,47 +301,43 @@ const FileGuardUploadUI = {
                 "aria-disabled",
                 "true"
             );
-
         }
 
-
         if (this.elements.localStatus) {
-
             this.elements.localStatus.classList.add(
                 "is-analyzing"
             );
 
+            this.elements.localStatus.classList.remove(
+                "is-complete",
+                "is-error"
+            );
         }
 
-
         if (this.elements.localStatusText) {
-
             this.elements.localStatusText.textContent =
                 file && file.name
                     ? `ANALYZING — ${file.name}`
                     : "ANALYZING FILE";
-
         }
-
     },
-
 
     setReady() {
 
-        this.state = "ready";
-
+        this.state =
+            "ready";
 
         if (this.elements.dropZone) {
-
             this.elements.dropZone.classList.remove(
                 "is-analyzing"
             );
 
+            this.elements.dropZone.removeAttribute(
+                "aria-disabled"
+            );
         }
 
-
         if (this.elements.button) {
-
             this.elements.button.classList.remove(
                 "is-disabled"
             );
@@ -357,47 +345,38 @@ const FileGuardUploadUI = {
             this.elements.button.removeAttribute(
                 "aria-disabled"
             );
-
         }
 
-
         if (this.elements.localStatus) {
-
             this.elements.localStatus.classList.remove(
                 "is-analyzing",
                 "is-complete",
                 "is-error"
             );
-
         }
-
 
         if (this.elements.localStatusText) {
-
             this.elements.localStatusText.textContent =
                 "LOCAL ENGINE — READY";
-
         }
-
     },
-
 
     setComplete(file) {
 
-        this.state = "complete";
-
+        this.state =
+            "complete";
 
         if (this.elements.dropZone) {
-
             this.elements.dropZone.classList.remove(
                 "is-analyzing"
             );
 
+            this.elements.dropZone.removeAttribute(
+                "aria-disabled"
+            );
         }
 
-
         if (this.elements.button) {
-
             this.elements.button.classList.remove(
                 "is-disabled"
             );
@@ -405,12 +384,9 @@ const FileGuardUploadUI = {
             this.elements.button.removeAttribute(
                 "aria-disabled"
             );
-
         }
 
-
         if (this.elements.localStatus) {
-
             this.elements.localStatus.classList.remove(
                 "is-analyzing",
                 "is-error"
@@ -419,38 +395,32 @@ const FileGuardUploadUI = {
             this.elements.localStatus.classList.add(
                 "is-complete"
             );
-
         }
 
-
         if (this.elements.localStatusText) {
-
             this.elements.localStatusText.textContent =
                 file && file.name
                     ? `ANALYSIS COMPLETE — ${file.name}`
                     : "LOCAL ENGINE — COMPLETE";
-
         }
-
     },
-
 
     setError(message) {
 
-        this.state = "error";
-
+        this.state =
+            "error";
 
         if (this.elements.dropZone) {
-
             this.elements.dropZone.classList.remove(
                 "is-analyzing"
             );
 
+            this.elements.dropZone.removeAttribute(
+                "aria-disabled"
+            );
         }
 
-
         if (this.elements.button) {
-
             this.elements.button.classList.remove(
                 "is-disabled"
             );
@@ -458,12 +428,9 @@ const FileGuardUploadUI = {
             this.elements.button.removeAttribute(
                 "aria-disabled"
             );
-
         }
 
-
         if (this.elements.localStatus) {
-
             this.elements.localStatus.classList.remove(
                 "is-analyzing",
                 "is-complete"
@@ -472,23 +439,17 @@ const FileGuardUploadUI = {
             this.elements.localStatus.classList.add(
                 "is-error"
             );
-
         }
 
-
         if (this.elements.localStatusText) {
-
             this.elements.localStatusText.textContent =
                 message
                     ? `LOCAL ENGINE — ${message}`
                     : "LOCAL ENGINE — ERROR";
-
         }
-
     }
 
 };
-
 
 window.FileGuardUploadUI =
     FileGuardUploadUI;
