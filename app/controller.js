@@ -4,117 +4,69 @@ const FileGuardController = {
 
     initialized: false,
 
-
     init() {
-
         if (this.initialized) {
             return;
         }
 
+        this.initialized = true;
 
         this.bindEvents();
 
-
-        /*
-         * Initialize upload system.
-         *
-         * Without this call the native input
-         * has no "change" listener.
-         */
+        if (
+            window.FileGuardUpload &&
+            typeof window.FileGuardUpload.init === "function"
+        ) {
+            window.FileGuardUpload.init();
+        }
 
         if (
-            window.FileGuardUploadUI &&
-            typeof window.FileGuardUploadUI.init ===
-                "function"
+            window.FileGuardAnalysisUI &&
+            typeof window.FileGuardAnalysisUI.init === "function"
         ) {
-
-            window.FileGuardUploadUI.init();
-
-        } else {
-
-            console.error(
-                "FileGuardUploadUI is not available."
-            );
-
-        }
-
-
-        if (window.FileGuardAnalysisUI) {
-
             window.FileGuardAnalysisUI.init();
-
         }
 
-
-        if (window.FileGuardWorkspaceUI) {
-
-            window.FileGuardWorkspaceUI.init();
-
+        if (
+            window.FileGuardWorkspace &&
+            typeof window.FileGuardWorkspace.init === "function"
+        ) {
+            window.FileGuardWorkspace.init();
         }
 
-
-        this.initialized = true;
-
-
-        console.log(
-            "FileGuardController: initialized."
-        );
-
+        if (
+            window.FileGuardRouter &&
+            typeof window.FileGuardRouter.init === "function"
+        ) {
+            window.FileGuardRouter.init();
+        }
     },
 
-
     bindEvents() {
-
-        /*
-         * File selection.
-         */
-
         document.addEventListener(
             "fileguard:file-selected",
             (event) => {
-
-                this.handleFileSelected(
-                    event
-                );
-
+                this.handleFileSelected(event);
             }
         );
-
-
-        /*
-         * Workspace navigation.
-         */
 
         document.addEventListener(
             "fileguard:workspace-tab-selected",
             (event) => {
-
-                this.handleWorkspaceTabSelected(
-                    event
-                );
-
+                this.handleWorkspaceTabSelected(event);
             }
         );
-
     },
 
-
     async handleFileSelected(event) {
-
         const file =
-            event.detail?.file;
-
-
-        console.log(
-            "FileGuardController: file-selected event received.",
-            file
-        );
-
+            event && event.detail
+                ? event.detail.file
+                : null;
 
         if (!(file instanceof File)) {
-
             this.handleError(
-                new TypeError(
+                new Error(
                     "FileGuard received an invalid file."
                 )
             );
@@ -122,258 +74,232 @@ const FileGuardController = {
             return;
         }
 
+        const state =
+            window.FileGuardAppState;
 
-        if (
-            FileGuardAppState.analysisRunning
-        ) {
-
-            console.warn(
-                "FileGuardController: analysis already running."
+        if (!state) {
+            this.handleError(
+                new Error(
+                    "FileGuard application state is unavailable."
+                )
             );
 
             return;
         }
 
+        if (state.analysisRunning) {
+            return;
+        }
 
-        /*
-         * Set global application state.
-         */
+        state.resetForAnalysis(file);
 
-        FileGuardAppState.resetForAnalysis(
-            file
-        );
+        this.navigateToAnalysis();
 
-
-        /*
-         * Immediately show analysis state.
-         */
-
-        this.showAnalysis(
-            file
-        );
-
-
-        /*
-         * Start actual analysis.
-         */
+        this.showAnalysis(file);
 
         try {
-
-            console.log(
-                "FileGuardController: starting analysis."
-            );
-
+            if (
+                !window.FileGuardAnalyzer ||
+                typeof window.FileGuardAnalyzer.analyze !==
+                    "function"
+            ) {
+                throw new Error(
+                    "FileGuard analysis engine is unavailable."
+                );
+            }
 
             const result =
-                await FileGuardAnalyzer.analyze(
+                await window.FileGuardAnalyzer.analyze(
                     file,
                     (progress) => {
-
-                        this.handleProgress(
-                            progress
-                        );
-
+                        this.handleProgress(progress);
                     }
                 );
 
+            state.setResult(result);
 
-            /*
-             * Analysis succeeded.
-             */
+            this.showAnalysisComplete(file, result);
 
-            FileGuardAppState.setResult(
-                result
-            );
+            this.navigateToResults();
 
-
-            if (
-                window.FileGuardUploadUI &&
-                typeof window.FileGuardUploadUI.setComplete ===
-                    "function"
-            ) {
-
-                window.FileGuardUploadUI.setComplete(
-                    file
-                );
-
-            }
-
-
-            this.showResult(
-                result
-            );
-
-
-            console.log(
-                "FileGuardController: analysis completed.",
-                result
-            );
+            this.showResult(result);
 
         } catch (error) {
 
-            /*
-             * Analysis failed.
-             */
+            state.setError(error);
 
-            FileGuardAppState.setError(
-                error
-            );
-
-
-            if (
-                window.FileGuardUploadUI &&
-                typeof window.FileGuardUploadUI.setError ===
-                    "function"
-            ) {
-
-                window.FileGuardUploadUI.setError(
-                    "ERROR"
-                );
-
-            }
-
-
-            this.handleError(
-                error
-            );
-
+            this.handleError(error);
         }
-
     },
-
 
     handleProgress(progress) {
-
         if (
-            !progress ||
-            typeof progress !== "object"
+            window.FileGuardAnalysisUI &&
+            typeof window.FileGuardAnalysisUI.updateProgress ===
+                "function"
         ) {
-            return;
-        }
-
-
-        console.log(
-            "FileGuard progress:",
-            progress
-        );
-
-
-        if (
-            window.FileGuardAnalysisUI
-        ) {
-
-            window.FileGuardAnalysisUI.update(
+            window.FileGuardAnalysisUI.updateProgress(
                 progress
             );
-
         }
-
     },
 
-
     handleWorkspaceTabSelected(event) {
+        const detail =
+            event && event.detail
+                ? event.detail
+                : null;
 
-        const panelName =
-            event.detail?.panel;
+        const panel =
+            detail && typeof detail.panel === "string"
+                ? detail.panel
+                : null;
 
-
-        if (!panelName) {
+        if (!panel) {
             return;
         }
 
+        const state =
+            window.FileGuardAppState;
 
-        FileGuardAppState.setActivePanel(
-            panelName
-        );
-
-
-        if (
-            window.FileGuardWorkspaceUI
-        ) {
-
-            window.FileGuardWorkspaceUI.showPanel(
-                panelName
-            );
-
+        if (state) {
+            state.setActivePanel(panel);
         }
 
+        if (
+            window.FileGuardWorkspace &&
+            typeof window.FileGuardWorkspace.showPanel ===
+                "function"
+        ) {
+            window.FileGuardWorkspace.showPanel(panel);
+        }
     },
 
+    navigateToAnalysis() {
+        if (
+            window.FileGuardRouter &&
+            typeof window.FileGuardRouter.navigate ===
+                "function"
+        ) {
+            window.FileGuardRouter.navigate(
+                "analysis"
+            );
+        }
+    },
+
+    navigateToResults() {
+        if (
+            window.FileGuardRouter &&
+            typeof window.FileGuardRouter.navigate ===
+                "function"
+        ) {
+            window.FileGuardRouter.navigate(
+                "results"
+            );
+        }
+    },
+
+    navigateToError() {
+        if (
+            window.FileGuardRouter &&
+            typeof window.FileGuardRouter.navigate ===
+                "function"
+        ) {
+            window.FileGuardRouter.navigate(
+                "error"
+            );
+        }
+    },
+
+    navigateToHome() {
+        if (
+            window.FileGuardRouter &&
+            typeof window.FileGuardRouter.navigate ===
+                "function"
+        ) {
+            window.FileGuardRouter.navigate(
+                "home"
+            );
+        }
+    },
 
     showAnalysis(file) {
-
         if (
-            window.FileGuardAnalysisUI
+            window.FileGuardAnalysisUI &&
+            typeof window.FileGuardAnalysisUI.start ===
+                "function"
         ) {
-
-            window.FileGuardAnalysisUI.show(
+            window.FileGuardAnalysisUI.start(
                 file
             );
-
         }
-
     },
 
+    showAnalysisComplete(file, result) {
+        if (
+            window.FileGuardAnalysisUI &&
+            typeof window.FileGuardAnalysisUI.complete ===
+                "function"
+        ) {
+            window.FileGuardAnalysisUI.complete(
+                file,
+                result
+            );
+        }
+    },
 
     showResult(result) {
-
         if (
-            window.FileGuardResultUI
+            window.FileGuardResultUI &&
+            typeof window.FileGuardResultUI.render ===
+                "function"
         ) {
-
             window.FileGuardResultUI.render(
                 result
             );
-
         }
-
 
         if (
-            window.FileGuardWorkspaceUI
+            window.FileGuardWorkspace &&
+            typeof window.FileGuardWorkspace.render ===
+                "function"
         ) {
-
-            window.FileGuardWorkspaceUI.render(
+            window.FileGuardWorkspace.render(
                 result
             );
-
         }
-
     },
 
-
     handleError(error) {
-
         console.error(
-            "FileGuard analysis error:",
+            "FileGuardController error:",
             error
         );
 
+        const state =
+            window.FileGuardAppState;
 
         if (
-            window.FileGuardAnalysisUI
+            state &&
+            state.error !== error
         ) {
-
-            window.FileGuardAnalysisUI.showError(
-                error
-            );
-
+            state.setError(error);
         }
-
 
         if (
-            window.FileGuardErrorsUI
+            window.FileGuardErrors &&
+            typeof window.FileGuardErrors.show ===
+                "function"
         ) {
-
-            window.FileGuardErrorsUI.show(
+            window.FileGuardErrors.show(
                 error
             );
-
         }
 
+        this.navigateToError();
     }
 
 };
-
 
 window.FileGuardController =
     FileGuardController;
