@@ -7,12 +7,22 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     >
 
     <meta
         name="description"
         content="FileGuard — local-first file analysis laboratory."
+    >
+
+    <meta
+        name="theme-color"
+        content="#07090b"
+    >
+
+    <meta
+        name="color-scheme"
+        content="dark"
     >
 
     <title>FileGuard — File Analysis Laboratory</title>
@@ -24,438 +34,850 @@
 
 </head>
 
-
 <body>
 
-    <header class="topbar">
+    <div
+        class="app-shell"
+        id="app"
+    >
 
-        <div class="brand">
-            FILEGUARD
-        </div>
+        <header class="topbar">
 
-        <div class="version">
-            01.0.0
-        </div>
-
-    </header>
-
-
-    <main>
-
-        <section class="hero">
-
-            <div class="hero-label">
-                LOCAL FILE ANALYSIS
-            </div>
-
-            <h1>
-                KNOW WHAT<br>
-                YOU ARE OPENING.
-            </h1>
-
-            <p class="hero-description">
-                FileGuard examines file identity, structure,
-                metadata and security-relevant characteristics
-                directly in your browser.
-            </p>
-
-        </section>
-
-
-        <section
-            class="upload-section"
-            id="upload-section"
-        >
-
-            <div
-                class="drop-zone"
-                id="drop-zone"
+            <a
+                class="brand"
+                href="#/"
+                aria-label="FileGuard home"
+                data-navigation="home"
             >
+                FILEGUARD
+            </a>
 
-                <div class="drop-zone-label">
-                    FILE INPUT
-                </div>
+            <div class="topbar-meta">
 
-                <div class="drop-zone-title">
-                    DROP FILE HERE
-                </div>
+                <span class="version">
+                    01.0.0
+                </span>
 
-                <div class="drop-zone-subtitle">
-                    Analysis starts automatically
-                </div>
-
-                <label
-                    id="select-file-button"
-                    class="primary-button"
-                    for="file-input"
+                <span
+                    class="engine-indicator"
+                    aria-label="Local analysis engine ready"
                 >
-                    SELECT FILE
-                </label>
-
-                <input
-                    id="file-input"
-                    class="file-input"
-                    type="file"
-                    aria-label="Select file for analysis"
-                >
-
-                <div class="local-status">
-
-                    <span class="status-indicator"></span>
+                    <span
+                        class="engine-indicator-dot"
+                        aria-hidden="true"
+                    ></span>
 
                     <span>
-                        LOCAL ENGINE — READY
+                        LOCAL
+                    </span>
+                </span>
+
+            </div>
+
+        </header>
+
+        <main
+            class="app-main"
+            id="app-main"
+        >
+
+            <section
+                class="screen screen-home"
+                id="screen-home"
+                data-screen="home"
+                aria-labelledby="home-title"
+            >
+
+                <div
+                    class="home-background-glow"
+                    aria-hidden="true"
+                ></div>
+
+                <div class="hero">
+
+                    <div class="hero-label">
+                        LOCAL FILE ANALYSIS
+                    </div>
+
+                    <h1 id="home-title">
+
+                        KNOW WHAT
+                        <span class="hero-title-accent">
+                            YOU ARE OPENING.
+                        </span>
+
+                    </h1>
+
+                    <p class="hero-description">
+                        FileGuard examines file identity,
+                        structure, metadata and
+                        security-relevant characteristics
+                        directly in your browser.
+                    </p>
+
+                </div>
+
+                <section
+                    class="upload-section"
+                    id="upload-section"
+                    aria-labelledby="upload-title"
+                >
+
+                    <div
+                        class="drop-zone"
+                        id="drop-zone"
+                        tabindex="0"
+                        role="button"
+                        aria-describedby="upload-description"
+                    >
+
+                        <div class="drop-zone-header">
+
+                            <span class="drop-zone-label">
+                                FILE INPUT
+                            </span>
+
+                            <span class="drop-zone-local">
+                                LOCAL ONLY
+                            </span>
+
+                        </div>
+
+                        <div class="drop-zone-content">
+
+                            <div
+                                class="drop-zone-scanline"
+                                aria-hidden="true"
+                            ></div>
+
+                            <div
+                                class="drop-zone-icon"
+                                aria-hidden="true"
+                            >
+                                +
+                            </div>
+
+                            <h2
+                                class="drop-zone-title"
+                                id="upload-title"
+                            >
+                                DROP FILE HERE
+                            </h2>
+
+                            <p
+                                class="drop-zone-subtitle"
+                                id="upload-description"
+                            >
+                                Analysis starts automatically
+                            </p>
+
+                            <label
+                                id="select-file-button"
+                                class="primary-button"
+                                for="file-input"
+                            >
+                                <span class="primary-button-text">
+                                    SELECT FILE
+                                </span>
+
+                                <span
+                                    class="primary-button-arrow"
+                                    aria-hidden="true"
+                                >
+                                    →
+                                </span>
+                            </label>
+
+                            <input
+                                id="file-input"
+                                class="file-input"
+                                type="file"
+                                tabindex="-1"
+                                aria-label="Select file for analysis"
+                            >
+
+                        </div>
+
+                        <div
+                            class="local-status"
+                            role="status"
+                            aria-live="polite"
+                        >
+
+                            <span
+                                class="status-indicator"
+                                aria-hidden="true"
+                            ></span>
+
+                            <span>
+                                LOCAL ENGINE — READY
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <div class="home-footnote">
+
+                    <span>
+                        FILES ARE ANALYZED LOCALLY
+                    </span>
+
+                    <span aria-hidden="true">
+                        /
+                    </span>
+
+                    <span>
+                        NO UPLOAD REQUIRED
                     </span>
 
                 </div>
 
-            </div>
+            </section>
 
-        </section>
-
-
-        <section
-            class="analysis-section"
-            id="analysis-section"
-            hidden
-        >
-
-            <div class="section-header">
-
-                <div class="section-label">
-                    ANALYSIS
-                </div>
-
-                <div
-                    class="analysis-file-name"
-                    id="analysis-file"
-                >
-                    —
-                </div>
-
-            </div>
-
-
-            <div
-                class="analysis-steps"
-                id="analysis-steps"
+            <section
+                class="screen screen-analysis"
+                id="screen-analysis"
+                data-screen="analysis"
+                hidden
+                aria-labelledby="analysis-title"
             >
 
-                <div class="analysis-step" data-step="identity">
-                    <span class="step-index">01</span>
-                    <span class="step-name">FILE IDENTITY</span>
-                    <span class="step-status">WAITING</span>
+                <div class="analysis-shell">
+
+                    <div class="analysis-intro">
+
+                        <div class="section-label">
+                            ANALYSIS
+                        </div>
+
+                        <h1
+                            class="analysis-title"
+                            id="analysis-title"
+                        >
+                            ANALYZING FILE
+                        </h1>
+
+                        <div
+                            class="analysis-file-name"
+                            id="analysis-file"
+                        >
+                            —
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="analysis-visual"
+                        aria-hidden="true"
+                    >
+
+                        <div class="analysis-orbit">
+
+                            <div class="analysis-orbit-ring"></div>
+
+                            <div class="analysis-orbit-ring"></div>
+
+                            <div class="analysis-orbit-core">
+                                <span></span>
+                            </div>
+
+                        </div>
+
+                        <div class="analysis-grid"></div>
+
+                        <div class="analysis-scan-line"></div>
+
+                    </div>
+
+                    <div
+                        class="analysis-live-status"
+                        role="status"
+                        aria-live="polite"
+                    >
+
+                        <span
+                            class="analysis-spinner"
+                            aria-hidden="true"
+                        >
+                            ◐
+                        </span>
+
+                        <span class="analysis-live-text">
+                            ANALYZING
+                        </span>
+
+                    </div>
+
+                    <div class="analysis-progress">
+
+                        <div class="analysis-progress-header">
+
+                            <span>
+                                LOCAL ANALYSIS ENGINE
+                            </span>
+
+                            <span
+                                class="analysis-progress-state"
+                                id="analysis-progress-state"
+                            >
+                                RUNNING
+                            </span>
+
+                        </div>
+
+                        <div
+                            class="analysis-progress-track"
+                            aria-hidden="true"
+                        >
+                            <div
+                                class="analysis-progress-bar"
+                                id="analysis-progress-bar"
+                            ></div>
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="analysis-steps"
+                        id="analysis-steps"
+                    >
+
+                        <div
+                            class="analysis-step"
+                            data-step="identity"
+                        >
+                            <span class="step-index">01</span>
+                            <span class="step-name">
+                                FILE IDENTITY
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="hashes"
+                        >
+                            <span class="step-index">02</span>
+                            <span class="step-name">
+                                CRYPTOGRAPHIC HASHES
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="detection"
+                        >
+                            <span class="step-index">03</span>
+                            <span class="step-name">
+                                FILE DETECTION
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="plan"
+                        >
+                            <span class="step-index">04</span>
+                            <span class="step-name">
+                                ANALYSIS PLAN
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="archive"
+                        >
+                            <span class="step-index">05</span>
+                            <span class="step-name">
+                                ARCHIVE / STRUCTURE
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="generic"
+                        >
+                            <span class="step-index">06</span>
+                            <span class="step-name">
+                                GENERAL ANALYSIS
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="apk"
+                        >
+                            <span class="step-index">07</span>
+                            <span class="step-name">
+                                ANDROID ANALYSIS
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="findings"
+                        >
+                            <span class="step-index">08</span>
+                            <span class="step-name">
+                                FINDINGS
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="correlation"
+                        >
+                            <span class="step-index">09</span>
+                            <span class="step-name">
+                                CORRELATION
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="evidence"
+                        >
+                            <span class="step-index">10</span>
+                            <span class="step-name">
+                                EVIDENCE
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                        <div
+                            class="analysis-step"
+                            data-step="complete"
+                        >
+                            <span class="step-index">11</span>
+                            <span class="step-name">
+                                ANALYSIS COMPLETE
+                            </span>
+                            <span class="step-status">
+                                WAITING
+                            </span>
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="analysis-step" data-step="hashes">
-                    <span class="step-index">02</span>
-                    <span class="step-name">CRYPTOGRAPHIC HASHES</span>
-                    <span class="step-status">WAITING</span>
+            </section>
+
+                        <section
+                class="screen screen-results"
+                id="screen-results"
+                data-screen="results"
+                hidden
+                aria-labelledby="results-title"
+            >
+
+                <div class="results-shell">
+
+                    <div class="results-header">
+
+                        <div>
+
+                            <div class="section-label">
+                                FILEGUARD ANALYSIS
+                            </div>
+
+                            <h1
+                                class="results-title"
+                                id="results-title"
+                            >
+                                FILEGUARD VERDICT
+                            </h1>
+
+                        </div>
+
+                        <div
+                            class="result-status"
+                            id="result-status"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            —
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="result-summary"
+                        id="result-summary"
+                    ></div>
+
+                    <div
+                        class="result-findings"
+                        id="result-findings"
+                    ></div>
+
+                    <section
+                        class="workspace"
+                        aria-label="File investigation workspace"
+                    >
+
+                        <nav
+                            class="workspace-tabs"
+                            aria-label="Analysis sections"
+                            role="tablist"
+                        >
+
+                            <button
+                                class="workspace-tab active"
+                                data-panel="overview"
+                                type="button"
+                                role="tab"
+                                aria-selected="true"
+                            >
+                                OVERVIEW
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="identity"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                IDENTITY
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="structure"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                STRUCTURE
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="security"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                SECURITY
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="network"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                NETWORK
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="metadata"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                METADATA
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="files"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                FILES
+                            </button>
+
+                            <button
+                                class="workspace-tab"
+                                data-panel="evidence"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                EVIDENCE
+                            </button>
+
+                        </nav>
+
+                        <div class="workspace-content">
+
+                            <div
+                                class="workspace-panel active"
+                                data-panel-content="overview"
+                                role="tabpanel"
+                                aria-label="Overview"
+                            >
+                                <div id="overview-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="identity"
+                                role="tabpanel"
+                                aria-label="Identity"
+                                hidden
+                            >
+                                <div id="identity-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="structure"
+                                role="tabpanel"
+                                aria-label="Structure"
+                                hidden
+                            >
+                                <div id="structure-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="security"
+                                role="tabpanel"
+                                aria-label="Security"
+                                hidden
+                            >
+                                <div id="security-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="network"
+                                role="tabpanel"
+                                aria-label="Network"
+                                hidden
+                            >
+                                <div id="network-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="metadata"
+                                role="tabpanel"
+                                aria-label="Metadata"
+                                hidden
+                            >
+                                <div id="metadata-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="files"
+                                role="tabpanel"
+                                aria-label="Files"
+                                hidden
+                            >
+                                <div id="files-panel"></div>
+                            </div>
+
+                            <div
+                                class="workspace-panel"
+                                data-panel-content="evidence"
+                                role="tabpanel"
+                                aria-label="Evidence"
+                                hidden
+                            >
+                                <div id="evidence-panel"></div>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                    <div class="results-actions">
+
+                        <a
+                            class="secondary-button"
+                            href="#/"
+                            data-navigation="home"
+                        >
+                            <span aria-hidden="true">
+                                ←
+                            </span>
+
+                            ANALYZE ANOTHER FILE
+                        </a>
+
+                    </div>
+
                 </div>
 
-                <div class="analysis-step" data-step="detection">
-                    <span class="step-index">03</span>
-                    <span class="step-name">FILE DETECTION</span>
-                    <span class="step-status">WAITING</span>
+            </section>
+
+            <section
+                class="screen screen-error"
+                id="screen-error"
+                data-screen="error"
+                hidden
+                aria-labelledby="error-title"
+            >
+
+                <div class="error-shell">
+
+                    <div class="section-label">
+                        ANALYSIS ERROR
+                    </div>
+
+                    <h1
+                        class="error-title"
+                        id="error-title"
+                    >
+                        ANALYSIS COULD NOT BE COMPLETED.
+                    </h1>
+
+                    <div
+                        class="error-message"
+                        id="error-message"
+                        role="alert"
+                    ></div>
+
+                    <div class="error-actions">
+
+                        <a
+                            class="secondary-button"
+                            href="#/"
+                            data-navigation="home"
+                        >
+                            ← RETURN TO FILEGUARD
+                        </a>
+
+                    </div>
+
                 </div>
 
-                <div class="analysis-step" data-step="plan">
-                    <span class="step-index">04</span>
-                    <span class="step-name">ANALYSIS PLAN</span>
-                    <span class="step-status">WAITING</span>
+            </section>
+
+                        <section
+                class="screen screen-diagnostics"
+                id="screen-diagnostics"
+                data-screen="diagnostics"
+                hidden
+                aria-labelledby="diagnostics-title"
+            >
+
+                <div class="diagnostics-shell">
+
+                    <div class="diagnostics-header">
+
+                        <div>
+
+                            <div class="section-label">
+                                DEVELOPER INTERFACE
+                            </div>
+
+                            <h1
+                                class="diagnostics-title"
+                                id="diagnostics-title"
+                            >
+                                FILEGUARD DIAGNOSTICS
+                            </h1>
+
+                        </div>
+
+                        <a
+                            class="secondary-button"
+                            href="#/"
+                            data-navigation="home"
+                        >
+                            ← EXIT
+                        </a>
+
+                    </div>
+
+                    <div
+                        class="diagnostics-panel"
+                        id="fileguard-diagnostics"
+                    >
+
+                        <div class="diagnostics-panel-header">
+
+                            <span>
+                                BOOT / RUNTIME
+                            </span>
+
+                            <span
+                                class="diagnostics-live"
+                                id="diagnostics-live"
+                            >
+                                MONITORING
+                            </span>
+
+                        </div>
+
+                        <div
+                            class="diagnostic-results"
+                            id="diagnostic-results"
+                        >
+                            Checking modules...
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="analysis-step" data-step="archive">
-                    <span class="step-index">05</span>
-                    <span class="step-name">ARCHIVE / STRUCTURE</span>
-                    <span class="step-status">WAITING</span>
-                </div>
+            </section>
 
-                <div class="analysis-step" data-step="generic">
-                    <span class="step-index">06</span>
-                    <span class="step-name">GENERAL ANALYSIS</span>
-                    <span class="step-status">WAITING</span>
-                </div>
+        </main>
 
-                <div class="analysis-step" data-step="apk">
-                    <span class="step-index">07</span>
-                    <span class="step-name">ANDROID ANALYSIS</span>
-                    <span class="step-status">WAITING</span>
-                </div>
+        <footer class="footer">
 
-                <div class="analysis-step" data-step="findings">
-                    <span class="step-index">08</span>
-                    <span class="step-name">FINDINGS</span>
-                    <span class="step-status">WAITING</span>
-                </div>
-
-                <div class="analysis-step" data-step="correlation">
-                    <span class="step-index">09</span>
-                    <span class="step-name">CORRELATION</span>
-                    <span class="step-status">WAITING</span>
-                </div>
-
-                <div class="analysis-step" data-step="evidence">
-                    <span class="step-index">10</span>
-                    <span class="step-name">EVIDENCE</span>
-                    <span class="step-status">WAITING</span>
-                </div>
-
-                <div class="analysis-step" data-step="complete">
-                    <span class="step-index">11</span>
-                    <span class="step-name">ANALYSIS COMPLETE</span>
-                    <span class="step-status">WAITING</span>
-                </div>
-
+            <div>
+                FILEGUARD
             </div>
 
-        </section>
-
-
-        <section
-            class="result-section"
-            id="result-section"
-            hidden
-        >
-
-            <div class="section-header">
-
-                <div class="section-label">
-                    FILEGUARD VERDICT
-                </div>
-
-                <div
-                    class="result-status"
-                    id="result-status"
-                >
-                    —
-                </div>
-
+            <div>
+                LOCAL-FIRST FILE ANALYSIS
             </div>
 
-            <div
-                class="result-summary"
-                id="result-summary"
-            ></div>
-
-            <div
-                class="result-findings"
-                id="result-findings"
-            ></div>
-
-            <div class="workspace">
-
-                <nav class="workspace-tabs">
-
-                    <button
-                        class="workspace-tab active"
-                        data-panel="overview"
-                        type="button"
-                    >
-                        OVERVIEW
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="identity"
-                        type="button"
-                    >
-                        IDENTITY
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="structure"
-                        type="button"
-                    >
-                        STRUCTURE
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="security"
-                        type="button"
-                    >
-                        SECURITY
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="network"
-                        type="button"
-                    >
-                        NETWORK
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="metadata"
-                        type="button"
-                    >
-                        METADATA
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="files"
-                        type="button"
-                    >
-                        FILES
-                    </button>
-
-                    <button
-                        class="workspace-tab"
-                        data-panel="evidence"
-                        type="button"
-                    >
-                        EVIDENCE
-                    </button>
-
-                </nav>
-
-
-                <div class="workspace-content">
-
-                    <div
-                        class="workspace-panel active"
-                        data-panel-content="overview"
-                    >
-                        <div id="overview-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="identity"
-                    >
-                        <div id="identity-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="structure"
-                    >
-                        <div id="structure-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="security"
-                    >
-                        <div id="security-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="network"
-                    >
-                        <div id="network-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="metadata"
-                    >
-                        <div id="metadata-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="files"
-                    >
-                        <div id="files-panel"></div>
-                    </div>
-
-                    <div
-                        class="workspace-panel"
-                        data-panel-content="evidence"
-                    >
-                        <div id="evidence-panel"></div>
-                    </div>
-
-                </div>
-
+            <div>
+                NO FILE UPLOAD REQUIRED
             </div>
 
-        </section>
+        </footer>
 
-
-        <section
-            class="error-section"
-            id="error-section"
-            hidden
-        >
-
-            <div class="section-label">
-                ANALYSIS ERROR
-            </div>
-
-            <div
-                class="error-message"
-                id="error-message"
-            ></div>
-
-        </section>
-
-
-        <!-- TEMPORARY DIAGNOSTICS -->
-
-        <section
-            id="fileguard-diagnostics"
-            style="
-                margin: 32px 0;
-                padding: 16px;
-                border: 1px solid #444;
-                background: #080808;
-                color: #eee;
-                font-family: monospace;
-                font-size: 12px;
-                line-height: 1.7;
-            "
-        >
-
-            <div style="margin-bottom: 8px;">
-                FILEGUARD BOOT DIAGNOSTICS
-            </div>
-
-            <div id="diagnostic-results">
-                Checking modules...
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <footer class="footer">
-
-        <div>
-            FILEGUARD
-        </div>
-
-        <div>
-            LOCAL-FIRST FILE ANALYSIS
-        </div>
-
-        <div>
-            NO FILE UPLOAD REQUIRED
-        </div>
-
-    </footer>
-
-
-    <!-- UTILITIES -->
+    </div>
 
     <script src="utils/hash.js"></script>
-
-
-    <!-- FORMAT ANALYZERS -->
 
     <script src="analyzers/generic.js"></script>
     <script src="analyzers/archive.js"></script>
     <script src="analyzers/apk.js"></script>
-
-
-    <!-- CORE ENGINE -->
 
     <script src="core/detector.js"></script>
     <script src="core/evidence.js"></script>
@@ -463,9 +885,6 @@
     <script src="core/correlation.js"></script>
     <script src="core/analysis-plan.js"></script>
     <script src="core/analyzer.js"></script>
-
-
-    <!-- UI -->
 
     <script src="ui/upload.js"></script>
     <script src="ui/analysis.js"></script>
@@ -475,289 +894,10 @@
     <script src="ui/workspace.js"></script>
     <script src="ui/errors.js"></script>
 
-
-    <!-- APPLICATION -->
-
     <script src="app/state.js"></script>
+    <script src="app/router.js"></script>
     <script src="app/controller.js"></script>
     <script src="app/bootstrap.js"></script>
-
-
-    <!-- TEMPORARY DIAGNOSTIC SCRIPT -->
-
-    <script>
-
-        (function () {
-
-            const output =
-                document.getElementById(
-                    "diagnostic-results"
-                );
-
-
-            if (!output) {
-                return;
-            }
-
-
-            const modules = [
-
-                [
-                    "FileGuardHash",
-                    window.FileGuardHash
-                ],
-
-                [
-                    "FileGuardGenericAnalyzer",
-                    window.FileGuardGenericAnalyzer
-                ],
-
-                [
-                    "FileGuardArchiveAnalyzer",
-                    window.FileGuardArchiveAnalyzer
-                ],
-
-                [
-                    "FileGuardAPKAnalyzer",
-                    window.FileGuardAPKAnalyzer
-                ],
-
-                [
-                    "FileGuardDetector",
-                    window.FileGuardDetector
-                ],
-
-                [
-                    "FileGuardEvidence",
-                    window.FileGuardEvidence
-                ],
-
-                [
-                    "FileGuardFindings",
-                    window.FileGuardFindings
-                ],
-
-                [
-                    "FileGuardCorrelation",
-                    window.FileGuardCorrelation
-                ],
-
-                [
-                    "FileGuardAnalysisPlan",
-                    window.FileGuardAnalysisPlan
-                ],
-
-                [
-                    "FileGuardAnalyzer",
-                    window.FileGuardAnalyzer
-                ],
-
-                [
-                    "FileGuardUploadUI",
-                    window.FileGuardUploadUI
-                ],
-
-                [
-                    "FileGuardAnalysisUI",
-                    window.FileGuardAnalysisUI
-                ],
-
-                [
-                    "FileGuardAppState",
-                    window.FileGuardAppState
-                ],
-
-                [
-                    "FileGuardController",
-                    window.FileGuardController
-                ]
-
-            ];
-
-
-            const lines = [];
-
-
-            lines.push(
-                "PAGE: " +
-                window.location.href
-            );
-
-
-            lines.push(
-                "READY STATE: " +
-                document.readyState
-            );
-
-
-            lines.push("");
-
-
-            modules.forEach(
-                ([name, value]) => {
-
-                    const loaded =
-                        Boolean(value);
-
-                    lines.push(
-                        (
-                            loaded
-                                ? "OK   "
-                                : "FAIL "
-                        ) +
-                        name
-                    );
-
-                }
-            );
-
-
-            lines.push("");
-
-
-            lines.push(
-                "EVENT TEST: waiting for file selection..."
-            );
-
-
-            output.innerHTML =
-                lines
-                    .map(
-                        (line) =>
-                            `<div>${line}</div>`
-                    )
-                    .join("");
-
-
-            document.addEventListener(
-                "fileguard:file-selected",
-                (event) => {
-
-                    const file =
-                        event.detail &&
-                        event.detail.file;
-
-
-                    const eventLine =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    eventLine.style.marginTop =
-                        "8px";
-
-                    eventLine.style.paddingTop =
-                        "8px";
-
-                    eventLine.style.borderTop =
-                        "1px solid #333";
-
-
-                    eventLine.textContent =
-                        file
-                            ? "EVENT OK — " +
-                              file.name +
-                              " (" +
-                              file.size +
-                              " bytes)"
-                            : "EVENT FAIL — no File";
-
-
-                    output.appendChild(
-                        eventLine
-                    );
-
-                }
-            );
-
-
-            window.addEventListener(
-                "error",
-                (event) => {
-
-                    const errorLine =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    errorLine.style.marginTop =
-                        "8px";
-
-                    errorLine.style.paddingTop =
-                        "8px";
-
-                    errorLine.style.borderTop =
-                        "1px solid #333";
-
-
-                    errorLine.textContent =
-                        "RUNTIME ERROR — " +
-                        (
-                            event.message ||
-                            "Unknown JavaScript error"
-                        );
-
-
-                    output.appendChild(
-                        errorLine
-                    );
-
-                }
-            );
-
-
-            window.addEventListener(
-                "unhandledrejection",
-                (event) => {
-
-                    const errorLine =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    errorLine.style.marginTop =
-                        "8px";
-
-                    errorLine.style.paddingTop =
-                        "8px";
-
-                    errorLine.style.borderTop =
-                        "1px solid #333";
-
-
-                    const reason =
-                        event.reason;
-
-
-                    errorLine.textContent =
-                        "PROMISE ERROR — " +
-                        (
-                            reason &&
-                            reason.message
-                                ? reason.message
-                                : String(reason)
-                        );
-
-
-                    output.appendChild(
-                        errorLine
-                    );
-
-                }
-            );
-
-
-            console.log(
-                "FILEGUARD DIAGNOSTICS",
-                modules
-            );
-
-        })();
-
-    </script>
 
 </body>
 
