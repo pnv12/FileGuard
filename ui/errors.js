@@ -1,8 +1,9 @@
 "use strict";
 
 const FileGuardErrorsUI = {
+
     elements: {
-        section: null,
+        screen: null,
         message: null
     },
 
@@ -13,9 +14,9 @@ const FileGuardErrorsUI = {
             return;
         }
 
-        this.elements.section =
+        this.elements.screen =
             document.getElementById(
-                "error-section"
+                "screen-error"
             );
 
         this.elements.message =
@@ -42,27 +43,27 @@ const FileGuardErrorsUI = {
                 message;
         }
 
-        if (this.elements.section) {
-            this.elements.section.hidden =
+        if (
+            this.elements.screen &&
+            window.FileGuardRouter &&
+            typeof window.FileGuardRouter.navigate ===
+                "function"
+        ) {
+            window.FileGuardRouter.navigate(
+                "error"
+            );
+
+            return;
+        }
+
+        if (this.elements.screen) {
+            this.elements.screen.hidden =
                 false;
-        }
 
-        const analysisSection =
-            document.getElementById(
-                "analysis-section"
+            this.elements.screen.setAttribute(
+                "aria-hidden",
+                "false"
             );
-
-        if (analysisSection) {
-            analysisSection.hidden = true;
-        }
-
-        const resultSection =
-            document.getElementById(
-                "result-section"
-            );
-
-        if (resultSection) {
-            resultSection.hidden = true;
         }
     },
 
@@ -97,9 +98,14 @@ const FileGuardErrorsUI = {
     hide() {
         this.init();
 
-        if (this.elements.section) {
-            this.elements.section.hidden =
+        if (this.elements.screen) {
+            this.elements.screen.hidden =
                 true;
+
+            this.elements.screen.setAttribute(
+                "aria-hidden",
+                "true"
+            );
         }
     },
 
@@ -115,5 +121,5 @@ const FileGuardErrorsUI = {
     }
 };
 
-window.FileGuardErrorsUI =
+window.FileGuardErrors =
     FileGuardErrorsUI;
