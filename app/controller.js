@@ -13,30 +13,55 @@ const FileGuardController = {
 
         this.bindEvents();
 
+        /*
+         * Workspace currently exports FileGuardWorkspaceUI.
+         * Normalize the public application API here so every
+         * other module can use FileGuardWorkspace consistently.
+         */
+        if (
+            !window.FileGuardWorkspace &&
+            window.FileGuardWorkspaceUI
+        ) {
+            window.FileGuardWorkspace =
+                window.FileGuardWorkspaceUI;
+        }
+
         if (
             window.FileGuardUpload &&
-            typeof window.FileGuardUpload.init === "function"
+            typeof window.FileGuardUpload.init ===
+                "function"
         ) {
             window.FileGuardUpload.init();
         }
 
         if (
+            window.FileGuardUploadUI &&
+            typeof window.FileGuardUploadUI.init ===
+                "function"
+        ) {
+            window.FileGuardUploadUI.init();
+        }
+
+        if (
             window.FileGuardAnalysisUI &&
-            typeof window.FileGuardAnalysisUI.init === "function"
+            typeof window.FileGuardAnalysisUI.init ===
+                "function"
         ) {
             window.FileGuardAnalysisUI.init();
         }
 
         if (
             window.FileGuardWorkspace &&
-            typeof window.FileGuardWorkspace.init === "function"
+            typeof window.FileGuardWorkspace.init ===
+                "function"
         ) {
             window.FileGuardWorkspace.init();
         }
 
         if (
             window.FileGuardRouter &&
-            typeof window.FileGuardRouter.init === "function"
+            typeof window.FileGuardRouter.init ===
+                "function"
         ) {
             window.FileGuardRouter.init();
         }
@@ -112,21 +137,49 @@ const FileGuardController = {
                 await window.FileGuardAnalyzer.analyze(
                     file,
                     (progress) => {
-                        this.handleProgress(progress);
+                        this.handleProgress(
+                            progress
+                        );
                     }
                 );
 
             state.setResult(result);
 
-            this.showAnalysisComplete(file, result);
+            this.showAnalysisComplete(
+                file,
+                result
+            );
 
-            this.navigateToResults();
+            navigateSafely:
+            {
+                this.navigateToResults();
+            }
 
             this.showResult(result);
+
+            if (
+                window.FileGuardUploadUI &&
+                typeof window.FileGuardUploadUI.setComplete ===
+                    "function"
+            ) {
+                window.FileGuardUploadUI.setComplete(
+                    file
+                );
+            }
 
         } catch (error) {
 
             state.setError(error);
+
+            if (
+                window.FileGuardUploadUI &&
+                typeof window.FileGuardUploadUI.setError ===
+                    "function"
+            ) {
+                window.FileGuardUploadUI.setError(
+                    "ANALYSIS ERROR"
+                );
+            }
 
             this.handleError(error);
         }
@@ -151,7 +204,8 @@ const FileGuardController = {
                 : null;
 
         const panel =
-            detail && typeof detail.panel === "string"
+            detail &&
+            typeof detail.panel === "string"
                 ? detail.panel
                 : null;
 
@@ -163,7 +217,9 @@ const FileGuardController = {
             window.FileGuardAppState;
 
         if (state) {
-            state.setActivePanel(panel);
+            state.setActivePanel(
+                panel
+            );
         }
 
         if (
@@ -171,7 +227,9 @@ const FileGuardController = {
             typeof window.FileGuardWorkspace.showPanel ===
                 "function"
         ) {
-            window.FileGuardWorkspace.showPanel(panel);
+            window.FileGuardWorkspace.showPanel(
+                panel
+            );
         }
     },
 
@@ -235,7 +293,10 @@ const FileGuardController = {
         }
     },
 
-    showAnalysisComplete(file, result) {
+    showAnalysisComplete(
+        file,
+        result
+    ) {
         if (
             window.FileGuardAnalysisUI &&
             typeof window.FileGuardAnalysisUI.complete ===
@@ -283,7 +344,9 @@ const FileGuardController = {
             state &&
             state.error !== error
         ) {
-            state.setError(error);
+            state.setError(
+                error
+            );
         }
 
         if (
@@ -294,6 +357,20 @@ const FileGuardController = {
             window.FileGuardErrors.show(
                 error
             );
+
+            return;
+        }
+
+        if (
+            window.FileGuardErrorsUI &&
+            typeof window.FileGuardErrorsUI.show ===
+                "function"
+        ) {
+            window.FileGuardErrorsUI.show(
+                error
+            );
+
+            return;
         }
 
         this.navigateToError();
