@@ -13,11 +13,6 @@ const FileGuardController = {
 
         this.bindEvents();
 
-        /*
-         * Workspace currently exports FileGuardWorkspaceUI.
-         * Normalize the public application API here so every
-         * other module can use FileGuardWorkspace consistently.
-         */
         if (
             !window.FileGuardWorkspace &&
             window.FileGuardWorkspaceUI
@@ -150,10 +145,7 @@ const FileGuardController = {
                 result
             );
 
-            navigateSafely:
-            {
-                this.navigateToResults();
-            }
+            this.navigateToResults();
 
             this.showResult(result);
 
