@@ -1,7 +1,7 @@
 "use strict";
 
 const FileGuardDetector = {
-    VERSION: "2.0.0",
+    VERSION: "2.1.0",
 
     signatures: [
         ["png","PNG","image","image/png",["png"],[89,80,78,71,13,10,26,10]],
@@ -12,7 +12,7 @@ const FileGuardDetector = {
         ["zip","ZIP","archive","application/zip",["zip"],[80,75,3,4]],
         ["gzip","GZIP","archive","application/gzip",["gz","gzip"],[31,139]],
         ["bz2","BZIP2","archive","application/x-bzip2",["bz2"],[66,90,104]],
-        ["rar","RAR","archive","application/vnd.rar",["rar"],[82,97,114,33,26,7]],
+        ["rar","RAR","archive","application/vnd.rar",["rar"],[82,97,33,26,7]],
         ["7z","7-Zip","archive","application/x-7z-compressed",["7z"],[55,122,188,175,39,28]],
         ["elf","ELF","executable","application/x-elf",["elf","so"],[127,69,76,70]],
         ["pe","PE","executable","application/x-msdownload",["exe","dll","sys","scr"],[77,90]],
@@ -26,41 +26,90 @@ const FileGuardDetector = {
         ["jar","JAR","archive","application/java-archive",["jar"],[80,75,3,4]]
     ],
 
-    async detect(file) {
-        if (!(file instanceof File)) {
-            throw new TypeError("Invalid File object.");
+    async detect(file, options = {}) {
+        if (
+            typeof File === "undefined" ||
+            !(file instanceof File)
+        ) {
+            throw new TypeError(
+                "Invalid File object."
+            );
         }
 
-        const bytes = new Uint8Array(
-            await file.slice(0, 512).arrayBuffer()
+        const context =
+            options.context || null;
+
+        this.checkpoint(
+            context,
+            "detector-start"
         );
 
-        const extension = this.extension(file.name);
-        const mime = file.type || "unknown";
+        const bytes =
+            new Uint8Array(
+                await file
+                    .slice(0, 512)
+                    .arrayBuffer()
+            );
 
-        let matches = this.signatures
-            .filter(x => x[5] && this.match(bytes, x[5]))
-            .map(x => this.def(x));
+        this.checkpoint(
+            context,
+            "detector-header-read"
+        );
+
+        const extension =
+            this.extension(file.name);
+
+        const mime =
+            file.type || "unknown";
+
+        let matches =
+            this.signatures
+                .filter(
+                    x =>
+                        x[5] &&
+                        this.match(
+                            bytes,
+                            x[5]
+                        )
+                )
+                .map(
+                    x => this.def(x)
+                );
 
         matches.push(
             ...this.custom(bytes)
         );
 
-        matches = this.unique(matches);
+        matches =
+            this.unique(matches);
 
         const primary =
-            this.primary(matches, extension, mime);
+            this.primary(
+                matches,
+                extension,
+                mime
+            );
 
-        const extMatch = primary
-            ? primary.extensions.includes(extension)
-            : false;
+        const extMatch =
+            !!primary &&
+            primary.extensions.includes(
+                extension
+            );
 
-        const mimeMatch = primary
-            ? primary.mimeTypes.includes(mime)
-            : false;
+        const mimeMatch =
+            !!primary &&
+            mime !== "unknown" &&
+            primary.mimeTypes.includes(
+                mime
+            );
 
         const confidence =
-            this.confidence(primary, extMatch, mimeMatch);
+            this.confidence(
+                primary,
+                extMatch,
+                mimeMatch,
+                mime
+            );
 
         const anomalies = [];
 
@@ -93,7 +142,8 @@ const FileGuardDetector = {
                     "The filename extension does not match the detected format.",
                 evidence: {
                     extension,
-                    detectedFormat: primary.format
+                    detectedFormat:
+                        primary.format
                 }
             });
         }
@@ -112,7 +162,8 @@ const FileGuardDetector = {
                     "The browser-provided MIME type differs from the detected format.",
                 evidence: {
                     browserMime: mime,
-                    detectedFormat: primary.format
+                    detectedFormat:
+                        primary.format
                 }
             });
         }
@@ -122,16 +173,23 @@ const FileGuardDetector = {
                 id: "multiple-signatures",
                 severity: "LOW",
                 confidence: "MEDIUM",
-                title: "Multiple format signatures detected",
+                title:
+                    "Multiple format signatures detected",
                 description:
                     "More than one known format matched the file header.",
                 evidence: {
-                    formats: matches.map(
-                        x => x.format
-                    )
+                    formats:
+                        matches.map(
+                            x => x.format
+                        )
                 }
             });
         }
+
+        this.checkpoint(
+            context,
+            "detector-complete"
+        );
 
         return {
             detector: "signature",
@@ -154,8 +212,10 @@ const FileGuardDetector = {
                 : "unknown",
 
             confidence,
-            confidenceScore: confidence.score,
-            confidenceLevel: confidence.level,
+            confidenceScore:
+                confidence.score,
+            confidenceLevel:
+                confidence.level,
 
             extension,
             browserMime: mime,
@@ -170,23 +230,30 @@ const FileGuardDetector = {
                     ? primary.extensions
                     : [],
 
-            signatureMatched: !!primary,
+            signatureMatched:
+                !!primary,
 
             container:
                 primary
-                    ? primary.containerType || null
+                    ? primary.containerType ||
+                        null
                     : null,
 
-            extensionMatches: extMatch,
-            mimeMatches: mimeMatch,
+            extensionMatches:
+                extMatch,
 
-            matches: matches.map(x => ({
-                id: x.id,
-                format: x.format,
-                category: x.category,
-                containerType:
-                    x.containerType || null
-            })),
+            mimeMatches:
+                mimeMatch,
+
+            matches:
+                matches.map(x => ({
+                    id: x.id,
+                    format: x.format,
+                    category: x.category,
+                    containerType:
+                        x.containerType ||
+                        null
+                })),
 
             anomalies,
 
@@ -195,7 +262,10 @@ const FileGuardDetector = {
                     this.hex(
                         bytes.slice(
                             0,
-                            Math.min(32, bytes.length)
+                            Math.min(
+                                32,
+                                bytes.length
+                            )
                         )
                     ),
 
@@ -225,23 +295,45 @@ const FileGuardDetector = {
         const out = [];
 
         if (
-            this.ascii(bytes,0,4) === "RIFF" &&
-            this.ascii(bytes,8,4) === "WEBP"
+            this.ascii(
+                bytes,
+                0,
+                4
+            ) === "RIFF" &&
+            this.ascii(
+                bytes,
+                8,
+                4
+            ) === "WEBP"
         ) {
             out.push({
                 id: "webp",
                 format: "WEBP",
                 category: "image",
-                mimeTypes: ["image/webp"],
-                extensions: ["webp"],
+                mimeTypes: [
+                    "image/webp"
+                ],
+                extensions: [
+                    "webp"
+                ],
                 matchedSignature:
-                    Array.from(bytes.slice(0,12))
+                    Array.from(
+                        bytes.slice(0, 12)
+                    )
             });
         }
 
         if (
-            this.ascii(bytes,0,4) === "RIFF" &&
-            this.ascii(bytes,8,4) === "WAVE"
+            this.ascii(
+                bytes,
+                0,
+                4
+            ) === "RIFF" &&
+            this.ascii(
+                bytes,
+                8,
+                4
+            ) === "WAVE"
         ) {
             out.push({
                 id: "wav",
@@ -251,43 +343,75 @@ const FileGuardDetector = {
                     "audio/wav",
                     "audio/x-wav"
                 ],
-                extensions: ["wav"],
+                extensions: [
+                    "wav"
+                ],
                 matchedSignature:
-                    Array.from(bytes.slice(0,12))
+                    Array.from(
+                        bytes.slice(0, 12)
+                    )
             });
         }
 
         if (
-            this.ascii(bytes,0,4) === "RIFF" &&
-            this.ascii(bytes,8,4) === "AVI "
+            this.ascii(
+                bytes,
+                0,
+                4
+            ) === "RIFF" &&
+            this.ascii(
+                bytes,
+                8,
+                4
+            ) === "AVI "
         ) {
             out.push({
                 id: "avi",
                 format: "AVI",
                 category: "video",
-                mimeTypes: ["video/x-msvideo"],
-                extensions: ["avi"],
+                mimeTypes: [
+                    "video/x-msvideo"
+                ],
+                extensions: [
+                    "avi"
+                ],
                 matchedSignature:
-                    Array.from(bytes.slice(0,12))
+                    Array.from(
+                        bytes.slice(0, 12)
+                    )
             });
         }
 
         if (
-            this.ascii(bytes,4,4) === "ftyp"
+            this.ascii(
+                bytes,
+                4,
+                4
+            ) === "ftyp"
         ) {
             out.push({
                 id: "mp4",
                 format: "MP4",
                 category: "video",
-                mimeTypes: ["video/mp4"],
-                extensions: ["mp4"],
+                mimeTypes: [
+                    "video/mp4"
+                ],
+                extensions: [
+                    "mp4"
+                ],
                 matchedSignature:
-                    Array.from(bytes.slice(4,12))
+                    Array.from(
+                        bytes.slice(4, 12)
+                    )
             });
         }
 
         if (
-            this.ascii(bytes,0,3) === "ID3" ||
+            this.ascii(
+                bytes,
+                0,
+                3
+            ) === "ID3" ||
             (
                 bytes.length >= 2 &&
                 bytes[0] === 255 &&
@@ -298,10 +422,16 @@ const FileGuardDetector = {
                 id: "mp3",
                 format: "MP3",
                 category: "audio",
-                mimeTypes: ["audio/mpeg"],
-                extensions: ["mp3"],
+                mimeTypes: [
+                    "audio/mpeg"
+                ],
+                extensions: [
+                    "mp3"
+                ],
                 matchedSignature:
-                    Array.from(bytes.slice(0,3))
+                    Array.from(
+                        bytes.slice(0, 3)
+                    )
             });
         }
 
@@ -315,18 +445,27 @@ const FileGuardDetector = {
 
         return (
             matches.find(
-                x => x.extensions.includes(ext)
+                x =>
+                    x.extensions.includes(
+                        ext
+                    )
             ) ||
-
             matches.find(
-                x => x.mimeTypes.includes(mime)
+                x =>
+                    x.mimeTypes.includes(
+                        mime
+                    )
             ) ||
-
             matches[0]
         );
     },
 
-    confidence(primary, ext, mime) {
+    confidence(
+        primary,
+        extensionMatches,
+        mimeMatches,
+        mime
+    ) {
         if (!primary) {
             return {
                 score: 0,
@@ -336,30 +475,22 @@ const FileGuardDetector = {
 
         let score = 60;
 
-        if (ext) {
-            score += 20;
-        }
-
-        if (mime) {
+        if (extensionMatches) {
             score += 20;
         }
 
         if (
-            primary.extensions.includes(ext)
+            mime !== "unknown" &&
+            mimeMatches
         ) {
-            score += 10;
+            score += 20;
         }
-
-        if (
-            primary.mimeTypes.includes(mime)
-        ) {
-            score += 10;
-        }
-
-        score = Math.min(100, score);
 
         return {
-            score,
+            score: Math.min(
+                100,
+                score
+            ),
             level:
                 score >= 90
                     ? "HIGH"
@@ -370,7 +501,10 @@ const FileGuardDetector = {
     },
 
     match(bytes, sig) {
-        if (bytes.length < sig.length) {
+        if (
+            bytes.length <
+            sig.length
+        ) {
             return false;
         }
 
@@ -379,7 +513,9 @@ const FileGuardDetector = {
             i < sig.length;
             i++
         ) {
-            if (bytes[i] !== sig[i]) {
+            if (
+                bytes[i] !== sig[i]
+            ) {
                 return false;
             }
         }
@@ -392,11 +528,16 @@ const FileGuardDetector = {
 
         for (const item of matches) {
             if (!map.has(item.id)) {
-                map.set(item.id, item);
+                map.set(
+                    item.id,
+                    item
+                );
             }
         }
 
-        return [...map.values()];
+        return [
+            ...map.values()
+        ];
     },
 
     extension(name) {
@@ -422,7 +563,8 @@ const FileGuardDetector = {
 
         for (
             let i = start;
-            i < start + length &&
+            i <
+                start + length &&
             i < bytes.length;
             i++
         ) {
@@ -443,6 +585,16 @@ const FileGuardDetector = {
                         .padStart(2, "0")
             )
             .join(" ");
+    },
+
+    checkpoint(context, label) {
+        if (
+            context &&
+            typeof context.checkpoint ===
+                "function"
+        ) {
+            context.checkpoint(label);
+        }
     }
 };
 
