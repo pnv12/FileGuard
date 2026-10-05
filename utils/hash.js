@@ -1,60 +1,41 @@
 "use strict";
 
-/*
- * FILEGUARD
- * Hash Utility
- *
- * V1.0
- *
- * Calculates cryptographic hashes locally
- * using the browser Web Crypto API.
- *
- * Supported:
- * - SHA-256
- * - SHA-384
- * - SHA-512
- */
-
-
 const FileGuardHash = {
+    VERSION: "2.0.0",
 
-    /*
-     * ─────────────────────────────
-     * PUBLIC API
-     * ─────────────────────────────
-     */
-
-    async calculateAll(file) {
-
+    async calculateAll(file, options = {}) {
         this.validateFile(file);
 
-        const buffer =
-            await this.readFileBuffer(file);
+        const context = options.context || null;
 
+        this.checkpoint(context, "hash-read");
 
-        const [
-            sha256,
-            sha384,
-            sha512
-        ] = await Promise.all([
+        const buffer = await this.readFileBuffer(
+            file,
+            context
+        );
 
-            this.calculateDigest(
-                buffer,
-                "SHA-256"
-            ),
+        this.checkpoint(context, "hash-digest");
 
-            this.calculateDigest(
-                buffer,
-                "SHA-384"
-            ),
+        const sha256 = await this.calculateDigest(
+            buffer,
+            "SHA-256",
+            context
+        );
 
-            this.calculateDigest(
-                buffer,
-                "SHA-512"
-            )
+        const sha384 = await this.calculateDigest(
+            buffer,
+            "SHA-384",
+            context
+        );
 
-        ]);
+        const sha512 = await this.calculateDigest(
+            buffer,
+            "SHA-512",
+            context
+        );
 
+        this.checkpoint(context, "hash-complete");
 
         return {
             sha256,
@@ -63,21 +44,18 @@ const FileGuardHash = {
         };
     },
 
-
-    /*
-     * ─────────────────────────────
-     * SINGLE DIGEST
-     * ─────────────────────────────
-     */
-
-    async calculateDigest(buffer, algorithm) {
-
+    async calculateDigest(
+        buffer,
+        algorithm,
+        context = null
+    ) {
         if (!buffer) {
             throw new Error(
                 "Hash calculation requires file data."
             );
         }
 
+        this.checkpoint(context, `digest-${algorithm}`);
 
         const digest =
             await crypto.subtle.digest(
@@ -85,62 +63,93 @@ const FileGuardHash = {
                 buffer
             );
 
+        this.checkpoint(
+            context,
+            `digest-${algorithm}-complete`
+        );
 
         return this.bufferToHex(digest);
     },
 
-
-    /*
-     * ─────────────────────────────
-     * FILE READING
-     * ─────────────────────────────
-     */
-
-    async readFileBuffer(file) {
-
+    async readFileBuffer(file, context = null) {
         this.validateFile(file);
 
-        return await file.arrayBuffer();
+        this.checkpoint(context, "file-read");
+
+        const limit =
+            context &&
+            typeof context.getLimit === "function"
+                ? context.getLimit(
+                    "MAX_FILE_SIZE_BYTES"
+                )
+                : null;
+
+        if (
+            Number.isFinite(limit) &&
+            file.size > limit
+        ) {
+            throw this.createLimitError(
+                file.size,
+                limit
+            );
+        }
+
+        const buffer =
+            await file.arrayBuffer();
+
+        this.checkpoint(
+            context,
+            "file-read-complete"
+        );
+
+        return buffer;
     },
 
-
-    /*
-     * ─────────────────────────────
-     * BUFFER → HEX
-     * ─────────────────────────────
-     */
-
     bufferToHex(buffer) {
-
         const bytes =
             new Uint8Array(buffer);
 
-
         let result = "";
 
-
         for (const byte of bytes) {
-
             result += byte
                 .toString(16)
                 .padStart(2, "0");
         }
 
-
         return result;
     },
 
+    checkpoint(context, label) {
+        if (
+            context &&
+            typeof context.checkpoint === "function"
+        ) {
+            context.checkpoint(label);
+        }
+    },
 
-    /*
-     * ─────────────────────────────
-     * VALIDATION
-     * ─────────────────────────────
-     */
+    createLimitError(size, limit) {
+        const error = new Error(
+            "File exceeds the configured hash analysis limit."
+        );
+
+        error.name = "ResourceLimitError";
+        error.code = "FILE_TOO_LARGE";
+        error.resourceDetails = {
+            resource: "MAX_FILE_SIZE_BYTES",
+            value: size,
+            limit
+        };
+
+        return error;
+    },
 
     validateFile(file) {
-
-        if (!(file instanceof File)) {
-
+        if (
+            typeof File === "undefined" ||
+            !(file instanceof File)
+        ) {
             throw new TypeError(
                 "Expected a File object."
             );
@@ -148,10 +157,5 @@ const FileGuardHash = {
     }
 };
 
-
-/*
- * Expose utility globally for the
- * current browser-based architecture.
- */
-
-window.FileGuardHash = FileGuardHash;
+window.FileGuardHash =
+    FileGuardHash;
